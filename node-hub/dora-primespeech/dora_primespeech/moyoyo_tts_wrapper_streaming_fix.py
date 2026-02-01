@@ -190,6 +190,15 @@ class StreamingMoYoYoTTSWrapper:
             voice_config = voice_configs.get(self.voice, voice_configs["doubao"])
         
         # Create TTS configuration
+        # Check if reference audio is an absolute path (custom voice) or relative path (built-in voice)
+        ref_audio_path = voice_config["ref_audio"]
+        if Path(ref_audio_path).is_absolute():
+            # Custom voice - use absolute path directly
+            self.ref_audio_path = ref_audio_path
+        else:
+            # Built-in voice - relative to models_path
+            self.ref_audio_path = str(self.models_path / ref_audio_path)
+
         custom_config = {
             "device": self.device,
             "is_half": self.device != "cpu",
@@ -220,8 +229,7 @@ class StreamingMoYoYoTTSWrapper:
             
             self.tts = TTS(config_dict)
             
-            # Store reference audio info
-            self.ref_audio_path = str(self.models_path / voice_config["ref_audio"])
+            # Store prompt text (ref_audio_path already set above)
             self.prompt_text = voice_config["prompt_text"]
             
             self.log("INFO", f"Reference audio: {self.ref_audio_path}")

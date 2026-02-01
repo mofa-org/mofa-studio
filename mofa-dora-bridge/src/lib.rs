@@ -143,6 +143,10 @@ pub enum MofaNodeType {
     ChatViewer,
     /// Participant panel widget - receives audio and calculates levels for visualization
     ParticipantPanel,
+    /// ASR listener widget - receives transcription from ASR node
+    AsrListener,
+    /// Audio input widget - sends audio to ASR (for voice cloning)
+    AudioInput,
 }
 
 impl MofaNodeType {
@@ -155,6 +159,8 @@ impl MofaNodeType {
             MofaNodeType::MicInput => "mofa-mic-input",
             MofaNodeType::ChatViewer => "mofa-chat-viewer",
             MofaNodeType::ParticipantPanel => "mofa-participant-panel",
+            MofaNodeType::AsrListener => "mofa-asr-listener",
+            MofaNodeType::AudioInput => "mofa-audio-input",
         }
     }
 
@@ -167,6 +173,8 @@ impl MofaNodeType {
             "mofa-mic-input" => Some(MofaNodeType::MicInput),
             "mofa-chat-viewer" => Some(MofaNodeType::ChatViewer),
             "mofa-participant-panel" => Some(MofaNodeType::ParticipantPanel),
+            "mofa-asr-listener" => Some(MofaNodeType::AsrListener),
+            "mofa-audio-input" => Some(MofaNodeType::AudioInput),
             _ => None,
         }
     }

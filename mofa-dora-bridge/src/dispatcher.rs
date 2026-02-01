@@ -9,7 +9,10 @@ use crate::controller::DataflowController;
 use crate::error::{BridgeError, BridgeResult};
 use crate::parser::MofaNodeSpec;
 use crate::shared_state::SharedDoraState;
-use crate::widgets::{AecInputBridge, AudioPlayerBridge, PromptInputBridge, SystemLogBridge};
+use crate::widgets::{
+    AecInputBridge, AsrListenerBridge, AudioInputBridge, AudioPlayerBridge, PromptInputBridge,
+    SystemLogBridge,
+};
 use crate::MofaNodeType;
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -104,9 +107,10 @@ impl DynamicNodeDispatcher {
                     &node_spec.id,
                     shared_state.clone(),
                 )),
-                MofaNodeType::MicInput => {
-                    Box::new(AecInputBridge::with_shared_state(&node_spec.id, shared_state.clone()))
-                }
+                MofaNodeType::MicInput => Box::new(AecInputBridge::with_shared_state(
+                    &node_spec.id,
+                    shared_state.clone(),
+                )),
                 MofaNodeType::ChatViewer => {
                     // TODO: Implement ChatViewerBridge
                     continue;
@@ -117,6 +121,16 @@ impl DynamicNodeDispatcher {
                     info!("Skipping ParticipantPanel bridge - consolidated into AudioPlayerBridge");
                     continue;
                 }
+                MofaNodeType::AsrListener => Box::new(AsrListenerBridge::with_shared_state(
+                    &node_spec.id,
+                    shared_state.clone(),
+                )),
+                MofaNodeType::AudioInput => Box::new(AudioInputBridge::with_shared_state(
+                    &node_spec.id,
+                    shared_state
+                        .clone()
+                        .expect("AudioInputBridge requires shared state"),
+                )),
             };
 
             self.bindings.push(WidgetBinding {

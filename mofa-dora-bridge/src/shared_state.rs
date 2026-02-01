@@ -653,6 +653,9 @@ pub struct SharedDoraState {
 
     /// Microphone input state (from AEC bridge)
     pub mic: MicState,
+
+    /// ASR transcription result (language, text)
+    pub asr_transcription: DirtyValue<Option<(String, String)>>,
 }
 
 impl SharedDoraState {
@@ -664,6 +667,7 @@ impl SharedDoraState {
             logs: DirtyVec::new(1000),   // 1000 max log entries
             status: DirtyValue::default(),
             mic: MicState::new(),
+            asr_transcription: DirtyValue::default(),
         })
     }
 
@@ -675,6 +679,7 @@ impl SharedDoraState {
             logs: DirtyVec::new(max_logs),
             status: DirtyValue::default(),
             mic: MicState::new(),
+            asr_transcription: DirtyValue::default(),
         })
     }
 
@@ -685,6 +690,7 @@ impl SharedDoraState {
         self.logs.clear();
         self.status.set(DoraStatus::default());
         self.mic.clear();
+        self.asr_transcription.set(None);
     }
 
     /// Add active bridge
@@ -719,6 +725,7 @@ impl Default for SharedDoraState {
             logs: DirtyVec::new(1000),
             status: DirtyValue::default(),
             mic: MicState::new(),
+            asr_transcription: DirtyValue::default(),
         }
     }
 }

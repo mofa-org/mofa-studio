@@ -234,6 +234,13 @@ live_design! {
                 }
             }
 
+            tts_tab = <SidebarMenuButton> {
+                text: "MoFA TTS"
+                draw_icon: {
+                    svg_file: dep("crate://self/resources/icons/app.svg")
+                }
+            }
+
             // Apps container - height Fit so it adapts to content
             apps_wrapper = <View> {
                 width: Fill, height: Fit
@@ -320,6 +327,7 @@ live_design! {
 pub enum SidebarSelection {
     MofaFM,
     Debate,
+    TTS,
     App(usize), // 1-20
     Settings,
 }
@@ -482,6 +490,15 @@ impl Widget for Sidebar {
             self.handle_selection(cx, SidebarSelection::Debate);
         }
 
+        // Handle TTS tab click
+        if self
+            .view
+            .button(ids!(main_content.tts_tab))
+            .clicked(actions)
+        {
+            self.handle_selection(cx, SidebarSelection::TTS);
+        }
+
         // Handle Settings tab click
         if self.view.button(ids!(settings_tab)).clicked(actions) {
             self.handle_selection(cx, SidebarSelection::Settings);
@@ -580,6 +597,17 @@ impl Sidebar {
                     .button(ids!(main_content.apps_wrapper.apps_scroll.pinned_app_btn))
                     .set_visible(cx, false);
             }
+            SidebarSelection::TTS => {
+                self.view
+                    .button(ids!(main_content.tts_tab))
+                    .apply_over(cx, live! { draw_bg: { selected: 1.0 } });
+                // Hide pinned app when TTS is selected
+                self.pinned_app_name = None;
+                self.view
+                    .button(ids!(main_content.apps_wrapper.apps_scroll.pinned_app_btn))
+                    .set_visible(cx, false);
+            }
+
             SidebarSelection::App(app_idx) => {
                 self.set_app_button_selected(cx, *app_idx, true);
 
@@ -632,12 +660,13 @@ impl Sidebar {
             };
         }
 
-        // Clear MoFA FM, Debate, Settings, and pinned app
+        // Clear MoFA FM, Debate, TTS, Settings, and pinned app
         clear_selection!(
             self,
             cx,
             ids!(main_content.mofa_fm_tab),
             ids!(main_content.debate_tab),
+            ids!(main_content.tts_tab),
             ids!(settings_tab),
             ids!(main_content.apps_wrapper.apps_scroll.pinned_app_btn)
         );
@@ -993,6 +1022,13 @@ impl SidebarRef {
                             .button(ids!(main_content.debate_tab))
                             .apply_over(cx, live! { draw_bg: { selected: 1.0 } });
                     }
+                    SidebarSelection::TTS => {
+                        inner
+                            .view
+                            .button(ids!(main_content.tts_tab))
+                            .apply_over(cx, live! { draw_bg: { selected: 1.0 } });
+                    }
+
                     SidebarSelection::App(app_idx) => {
                         inner.set_app_button_selected(cx, app_idx, true);
 
@@ -1055,6 +1091,15 @@ impl SidebarRef {
 
             // Debate tab
             inner.view.button(ids!(main_content.debate_tab)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+
+            // TTS tab
+            inner.view.button(ids!(main_content.tts_tab)).apply_over(
                 cx,
                 live! {
                     draw_bg: { dark_mode: (dark_mode) }

@@ -128,10 +128,25 @@ live_design! {
     pub ACCENT_INDIGO = #6366f1    // Secondary accent
     pub TEXT_PRIMARY = #1f2937     // Main text (gray-800)
     pub TEXT_SECONDARY = #6b7280   // Secondary text (gray-500)
+    pub TEXT_TERTIARY = #9ca3af    // Tertiary text (gray-400)
     pub TEXT_MUTED = #9ca3af       // Muted/disabled text (gray-400)
     pub DIVIDER = #e2e8f0          // Divider lines (slate-200)
     pub BORDER = #e5e7eb           // Border color (gray-200)
     pub HOVER_BG = #f1f5f9         // Hover background (slate-100)
+    pub SURFACE = #ffffff           // Surface background (white)
+    pub SURFACE_HOVER = #f8fafc     // Surface hover (slate-50)
+
+    // --- Primary Color Palette (based on Blue) ---
+    pub PRIMARY_50 = #eff6ff
+    pub PRIMARY_100 = #dbebfe       // Adjusted from #dbeafe
+    pub PRIMARY_200 = #bfdbfe
+    pub PRIMARY_300 = #93c5fd
+    pub PRIMARY_400 = #60a5fa
+    pub PRIMARY_500 = #3b82f6
+    pub PRIMARY_600 = #2565fb       // Adjusted to avoid digit+e pattern
+    pub PRIMARY_700 = #1d4fd8       // Adjusted from #1d4ed8
+    pub PRIMARY_800 = #1f40af       // Adjusted from #1e40af
+    pub PRIMARY_900 = #1f3a8a       // Adjusted from #1e3a8a
 
     // --- White ---
     pub WHITE = #ffffff
@@ -234,11 +249,14 @@ live_design! {
     pub PANEL_BG_DARK = #1f293b        // Card/panel background (dark) - adjusted from #1e293b
     pub TEXT_PRIMARY_DARK = #f1f5f9    // Main text (dark)
     pub TEXT_SECONDARY_DARK = #94a3b8  // Secondary text (dark)
+    pub TEXT_TERTIARY_DARK = #64748b   // Tertiary text (dark)
     pub TEXT_MUTED_DARK = #64748b      // Muted text (dark)
     pub DIVIDER_DARK = #475569         // Divider lines (dark)
     pub BORDER_DARK = #334155          // Border color (dark)
     pub HOVER_BG_DARK = #334155        // Hover background (dark)
     pub ACCENT_BLUE_DARK = #60a5fa     // Primary action (brighter for dark mode)
+    pub SURFACE_DARK = #1f293b         // Surface background (dark) - adjusted from #1e293b
+    pub SURFACE_HOVER_DARK = #334155   // Surface hover (dark)
 
     // ========================================================================
     // THEMEABLE WIDGET BASE

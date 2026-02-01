@@ -41,6 +41,7 @@ live_design! {
     use mofa_fm::screen::design::MoFaFMScreen;
     use mofa_settings::screen::SettingsScreen;
     use mofa_debate::screen::design::MoFaDebateScreen;
+    use mofa_tts::screen::TTSScreen;
     use crate::widgets::tabs::TabWidget;
     use crate::widgets::tabs::TabBar;
 
@@ -331,6 +332,11 @@ live_design! {
                         }
 
                         debate_page = <MoFaDebateScreen> {
+                            width: Fill, height: Fill
+                            visible: false
+                        }
+
+                        tts_page = <TTSScreen> {
                             width: Fill, height: Fill
                             visible: false
                         }

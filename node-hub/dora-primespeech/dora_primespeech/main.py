@@ -22,6 +22,10 @@ from .moyoyo_tts_wrapper_streaming_fix import StreamingMoYoYoTTSWrapper as MoYoY
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'dora-common'))
 from dora_common.logging import send_log as common_send_log, get_log_level_from_env
 
+# Voice format parsing constants
+VOICE_PREFIX = "VOICE:"
+VOICE_CUSTOM_PREFIX = "VOICE:CUSTOM|"
+
 
 def send_log(node, level, message, config_level="INFO"):
     """Wrapper for backward compatibility during migration to common logging."""
@@ -241,10 +245,13 @@ def main():
         if tts_engine is None or not hasattr(tts_engine, 'tts') or tts_engine.tts is None:
             raise RuntimeError("TTS engine initialization failed - internal TTS is None")
 
+        # Store current voice for change detection
+        tts_engine._current_voice = voice_name
+        
         model_loaded = True
         init_time = time.time() - start_time
         send_log(node, "INFO", f"TTS engine pre-initialized in {init_time:.2f}s", config.LOG_LEVEL)
-        send_log(node, "INFO", "Ready to synthesize speech", config.LOG_LEVEL)
+        send_log(node, "INFO", f"Ready to synthesize speech with voice: {voice_name}", config.LOG_LEVEL)
 
     except Exception as init_err:
         send_log(node, "WARNING", f"Failed to pre-initialize TTS engine: {init_err}", config.LOG_LEVEL)
@@ -263,11 +270,84 @@ def main():
             
             if input_id == "text":
                 # Get text to synthesize
-                text = event["value"][0].as_py()
+                raw_data = event["value"][0].as_py()
                 metadata = event.get("metadata", {})
+                
+                print(f"DEBUG: Raw data received: {raw_data}", file=sys.stderr, flush=True)
+                
+                # Parse JSON payload {"prompt": "VOICE:name|text"} or {"prompt": "text"}
+                try:
+                    payload = json.loads(raw_data)
+                    raw_text = payload.get("prompt", "")
+                    print(f"DEBUG: Extracted prompt from JSON: {raw_text}", file=sys.stderr, flush=True)
+                except (json.JSONDecodeError, TypeError) as e:
+                    # Fallback: treat as plain text if not valid JSON
+                    print(f"DEBUG: Not valid JSON, treating as plain text: {e}", file=sys.stderr, flush=True)
+                    raw_text = raw_data
+                
+                # Parse VOICE: prefix for dynamic voice switching
+                # Format 1 (built-in): "VOICE:voice_name|actual_text"
+                # Format 2 (custom):   "VOICE:CUSTOM|ref_audio_path|prompt_text|language|actual_text"
+                current_voice_name = voice_name  # Default to initial voice
+                text = raw_text
+                custom_voice_config = None  # For custom voices
 
-                # DEBUG: Log what we received
-                send_log(node, "DEBUG", f"RECEIVED text: '{text}' (len={len(text)}, repr={repr(text)}, type={type(text).__name__})", config.LOG_LEVEL)
+                if raw_text.startswith(VOICE_PREFIX):
+                    try:
+                        # Check for custom voice format
+                        if raw_text.startswith(VOICE_CUSTOM_PREFIX):
+                            # Parse custom voice format: VOICE:CUSTOM|ref_audio|prompt_text|language|text
+                            # Remove prefix robustly using len() instead of hardcoded index
+                            parts = raw_text[len(VOICE_CUSTOM_PREFIX):].split("|", 3)
+                            if len(parts) == 4:
+                                ref_audio_path, prompt_text, lang, text = parts
+                                print(f"DEBUG: Parsed CUSTOM VOICE - ref_audio: '{ref_audio_path}', prompt: '{prompt_text[:30]}...', lang: '{lang}'", file=sys.stderr, flush=True)
+                                send_log(node, "INFO", f"Using custom voice with ref audio: {ref_audio_path}", config.LOG_LEVEL)
+
+                                # Create custom voice config using default model weights
+                                # This enables zero-shot voice cloning with user's reference audio
+                                custom_voice_config = {
+                                    "repository": "MoYoYoTech/tone-models",
+                                    "gpt_weights": "GPT_weights/doubao-mixed.ckpt",  # Use default GPT weights
+                                    "sovits_weights": "SoVITS_weights/doubao-mixed.pth",  # Use default SoVITS weights
+                                    "reference_audio": ref_audio_path,  # User's reference audio (absolute path)
+                                    "prompt_text": prompt_text,  # User's prompt text
+                                    "text_lang": lang if lang in ["zh", "en", "ja", "auto"] else "auto",
+                                    "prompt_lang": lang if lang in ["zh", "en", "ja", "auto"] else "auto",
+                                    "speed_factor": 1.1,
+                                }
+                                current_voice_name = "CUSTOM"
+                            else:
+                                send_log(node, "WARNING", f"Invalid CUSTOM voice format (expected 4 parts), got {len(parts)}: {raw_text[:100]}", config.LOG_LEVEL)
+                        else:
+                            # Parse built-in voice format: VOICE:voice_name|text
+                            parts = raw_text.split("|", 1)
+                            if len(parts) == 2:
+                                # Remove "VOICE:" prefix robustly using len() instead of hardcoded index
+                                voice_prefix = parts[0][len(VOICE_PREFIX):].strip()
+                                text = parts[1]
+
+                                print(f"DEBUG: Parsed VOICE - name: '{voice_prefix}', text: '{text}'", file=sys.stderr, flush=True)
+                                send_log(node, "DEBUG", f"Parsed VOICE prefix: '{voice_prefix}', text: '{text[:50]}...'", config.LOG_LEVEL)
+
+                                # Check if voice exists
+                                if voice_prefix in VOICE_CONFIGS:
+                                    current_voice_name = voice_prefix
+                                    send_log(node, "INFO", f"Switching to voice: {current_voice_name}", config.LOG_LEVEL)
+                                else:
+                                    send_log(node, "WARNING", f"Unknown voice '{voice_prefix}', using default: {voice_name}. Available: {list(VOICE_CONFIGS.keys())}", config.LOG_LEVEL)
+                            else:
+                                send_log(node, "WARNING", f"Invalid VOICE: format (expected 'VOICE:name|text'), got: {raw_text[:100]}", config.LOG_LEVEL)
+                    except Exception as e:
+                        send_log(node, "WARNING", f"Failed to parse VOICE: prefix: {e}, using raw text", config.LOG_LEVEL)
+
+                # DEBUG: Log what we received (show only processed text, not the full VOICE: string)
+                if raw_text.startswith(VOICE_PREFIX):
+                    send_log(node, "DEBUG", f"RECEIVED with VOICE prefix, parsed text: '{text[:50]}...', voice={current_voice_name}", config.LOG_LEVEL)
+                else:
+                    send_log(node, "DEBUG", f"RECEIVED text: '{text}' (len={len(text)}, voice={current_voice_name})", config.LOG_LEVEL)
+                
+                print(f"DEBUG: Final TTS text: '{text}', voice: {current_voice_name}", file=sys.stderr, flush=True)
 
                 segment_index = int(metadata.get("segment_index", -1))
 
@@ -299,18 +379,51 @@ def main():
 
                 send_log(node, "DEBUG", f"Processing segment {segment_index + 1} (len={len(text)})", config.LOG_LEVEL)
 
-                # Load models if not loaded
-                if not model_loaded:
-                    send_log(node, "DEBUG", "Loading models for the first time...", config.LOG_LEVEL)
+                # Check if voice changed and we need to reload model
+                current_tts_voice = getattr(tts_engine, '_current_voice', voice_name) if tts_engine else voice_name
+                voice_changed = (model_loaded and current_tts_voice != current_voice_name)
+                
+                print(f"DEBUG: Voice check - current: {current_tts_voice}, requested: {current_voice_name}, changed: {voice_changed}", file=sys.stderr, flush=True)
+                
+                # Load or reload models if not loaded or voice changed
+                print(f"DEBUG: Checking reload condition - model_loaded={model_loaded}, voice_changed={voice_changed}", file=sys.stderr, flush=True)
+                if not model_loaded or voice_changed:
+                    if voice_changed:
+                        print(f"DEBUG: Voice changed from {tts_engine._current_voice} to {current_voice_name}, reloading model...", file=sys.stderr, flush=True)
+                        send_log(node, "INFO", f"Voice changed from {tts_engine._current_voice} to {current_voice_name}, reloading model...", config.LOG_LEVEL)
+                    else:
+                        print(f"DEBUG: Loading models for the first time...", file=sys.stderr, flush=True)
+                        send_log(node, "DEBUG", "Loading models for the first time...", config.LOG_LEVEL)
+
                     # Validate models directory early so failures are visible
                     _validate_models_path(lambda lvl, msg: send_log(node, lvl, msg, config.LOG_LEVEL))
+
+                    # Get voice config for current voice
+                    if custom_voice_config is not None:
+                        # Use custom voice config (zero-shot cloning with user's reference audio)
+                        current_voice_config = custom_voice_config.copy()
+                        send_log(node, "INFO", f"Using custom voice config with ref audio: {current_voice_config.get('reference_audio', 'N/A')}", config.LOG_LEVEL)
+                    elif current_voice_name not in VOICE_CONFIGS:
+                        send_log(node, "WARNING", f"Voice {current_voice_name} not found, using default: {voice_name}", config.LOG_LEVEL)
+                        current_voice_name = voice_name
+                        current_voice_config = VOICE_CONFIGS[current_voice_name].copy()
+                    else:
+                        current_voice_config = VOICE_CONFIGS[current_voice_name].copy()
+
+                    # Apply overrides from main voice_config
+                    for key in ["text_lang", "prompt_lang", "top_k", "top_p", "temperature",
+                               "speed_factor", "batch_size", "seed", "text_split_method",
+                               "split_bucket", "return_fragment", "use_gpu", "device",
+                               "sample_rate", "fragment_interval"]:
+                        if key in voice_config and key not in current_voice_config:
+                            current_voice_config[key] = voice_config[key]
 
                     try:
                         # Always use PRIMESPEECH_MODEL_DIR
                         send_log(node, "DEBUG", "Using PRIMESPEECH_MODEL_DIR for models...", config.LOG_LEVEL)
                         # Initialize TTS engine
                         # Convert voice name to lowercase and remove spaces for MoYoYo compatibility
-                        moyoyo_voice = voice_name.lower().replace(" ", "")
+                        moyoyo_voice = current_voice_name.lower().replace(" ", "")
                         device = "cuda" if config.USE_GPU and config.DEVICE.startswith("cuda") else "cpu"
 
                         enable_streaming = config.RETURN_FRAGMENT if hasattr(config, 'RETURN_FRAGMENT') else False
@@ -321,9 +434,12 @@ def main():
                             device=device,
                             enable_streaming=enable_streaming,
                             chunk_duration=0.3,
-                            voice_config=voice_config,
+                            voice_config=current_voice_config,
                             logger_func=lambda level, msg: send_log(node, level, msg, config.LOG_LEVEL)
                         )
+                        
+                        # Store current voice for change detection
+                        tts_engine._current_voice = current_voice_name
 
                         # Check if initialization succeeded
                         if tts_engine is None or not hasattr(tts_engine, 'tts') or tts_engine.tts is None:

@@ -98,6 +98,8 @@ pub enum PageId {
     MofaFM,
     /// Debate app
     Debate,
+    /// TTS app (GPT-SoVITS)
+    TTS,
     /// Settings page
     Settings,
     /// Generic app page (for demo apps)
@@ -110,6 +112,7 @@ impl PageId {
         match self {
             PageId::MofaFM => live_id!(mofa_fm_tab),
             PageId::Debate => live_id!(debate_tab),
+            PageId::TTS => live_id!(tts_tab),
             PageId::Settings => live_id!(settings_tab),
             PageId::App => live_id!(app_tab),
         }
@@ -120,6 +123,7 @@ impl PageId {
         match self {
             PageId::MofaFM => live_id!(fm_page),
             PageId::Debate => live_id!(debate_page),
+            PageId::TTS => live_id!(tts_page),
             PageId::Settings => live_id!(settings_page),
             PageId::App => live_id!(app_page),
         }
@@ -141,7 +145,13 @@ impl PageRouter {
     pub fn new() -> Self {
         Self {
             current_page: Some(PageId::MofaFM), // Default to FM
-            pages: vec![PageId::MofaFM, PageId::Debate, PageId::Settings, PageId::App],
+            pages: vec![
+                PageId::MofaFM,
+                PageId::Debate,
+                PageId::TTS,
+                PageId::Settings,
+                PageId::App,
+            ],
         }
     }
 
@@ -188,12 +198,12 @@ impl PageRouter {
 /// This avoids WidgetUid mismatch issues with nested widgets
 pub fn tab_clicked(actions: &[Action], tab_id: LiveId) -> bool {
     actions.iter().filter_map(|a| a.as_widget_action()).any(|wa| {
-        if let ButtonAction::Clicked(_) = wa.cast() {
-            wa.path.data.iter().any(|id| *id == tab_id)
-        } else {
-            false
-        }
-    })
+            if let ButtonAction::Clicked(_) = wa.cast() {
+                wa.path.data.iter().any(|id| *id == tab_id)
+            } else {
+                false
+            }
+        })
 }
 
 /// Trait for apps that integrate with MoFA Studio shell
@@ -317,6 +327,7 @@ mod tests {
             name: "Test App",
             id,
             description: "A test app for unit tests",
+            ..Default::default()
         }
     }
 
@@ -326,6 +337,7 @@ mod tests {
             name: "MoFA FM",
             id: "mofa-fm",
             description: "AI-powered audio streaming",
+            ..Default::default()
         };
 
         assert_eq!(info.name, "MoFA FM");
@@ -390,11 +402,13 @@ mod tests {
             name: "First App",
             id: "first",
             description: "The first app",
+            ..Default::default()
         });
         registry.register(AppInfo {
             name: "Second App",
             id: "second",
             description: "The second app",
+            ..Default::default()
         });
 
         // Found

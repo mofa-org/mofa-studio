@@ -806,9 +806,11 @@ impl DoraBridge for AudioPlayerBridge {
         match (output_id, data) {
             ("buffer_status", DoraData::Json(val)) => {
                 if let Some(status) = val.as_f64() {
-                    self.buffer_status_sender
-                        .send(status)
-                        .map_err(|_| BridgeError::ChannelSendError)?;
+                    // Use try_send to avoid blocking the worker thread if channel is full
+                    // Buffer status updates are frequent and non-critical - dropping some is OK
+                    if let Err(e) = self.buffer_status_sender.try_send(status) {
+                        warn!("Failed to send buffer status update: {}", e);
+                    }
                 }
             }
             _ => {

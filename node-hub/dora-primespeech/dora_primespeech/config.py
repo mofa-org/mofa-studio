@@ -102,7 +102,7 @@ VOICE_CONFIGS = {
         "gpt_weights": "GPT_weights/yangmi_best_gpt.ckpt",
         "sovits_weights": "SoVITS_weights/yangmi_best_sovits.pth",
         "reference_audio": "ref_audios/yangmi_ref.wav",
-        "prompt_text": "你谁知道, 人生只有一次啊. 你怎么知道那样选, 你当下来说, 应该那样选.",
+        "prompt_text": "你谁知道，人生只有一次啊。你怎么知道那样选，你当下来说，应该那样选，为什么没那样选呢，但你今天这样选了呀。",
         "text_lang": "zh",
         "prompt_lang": "zh",
         "speed_factor": 1.1,

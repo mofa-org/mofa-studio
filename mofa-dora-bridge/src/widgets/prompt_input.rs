@@ -362,8 +362,32 @@ impl DoraBridge for PromptInputBridge {
                     .send(cmd)
                     .map_err(|_| BridgeError::ChannelSendError)?;
             }
-            _ => {
-                warn!("Unknown output: {}", output_id);
+            // Audio data needs direct sending via node (not via channel)
+            // For now, we reject it with a clear error
+            ("audio", DoraData::Audio(_)) => {
+                error!("PromptInputBridge cannot send audio data - audio output not supported by this bridge type");
+                return Err(BridgeError::NotSupported(
+                    "PromptInputBridge does not support audio output. Use a dedicated audio input bridge instead.".to_string()
+                ));
+            }
+            (output, data_type) => {
+                let data_type_name = match &data_type {
+                    DoraData::Text(_) => "Text",
+                    DoraData::Audio(_) => "Audio",
+                    DoraData::Control(_) => "Control",
+                    DoraData::Json(_) => "Json",
+                    DoraData::Binary(_) => "Binary",
+                    DoraData::Log(_) => "Log",
+                    DoraData::Chat(_) => "Chat",
+                    DoraData::Empty => "Empty",
+                };
+                warn!(
+                    "Unknown output '{}' with data type {}",
+                    output, data_type_name
+                );
+                return Err(BridgeError::NotSupported(
+                    format!("Output '{}' not supported by PromptInputBridge", output)
+                ));
             }
         }
 

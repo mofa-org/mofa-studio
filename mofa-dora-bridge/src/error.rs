@@ -68,6 +68,18 @@ pub enum BridgeError {
     #[error("Timeout: {0}")]
     Timeout(String),
 
+    #[error("Thread spawn failed: {0}")]
+    ThreadSpawnFailed(String),
+
+    #[error("Thread join failed")]
+    ThreadJoinFailed,
+
+    #[error("Operation not supported: {0}")]
+    NotSupported(String),
+
+    #[error("Bridge already running")]
+    AlreadyRunning,
+
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
