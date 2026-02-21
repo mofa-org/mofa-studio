@@ -17,7 +17,7 @@ use dora_node_api::{
     dora_core::config::{DataId, NodeId},
     DoraNode, Event, IntoArrow, Parameter,
 };
-use libloading::{Library, Symbol};
+use libloading::Library;
 use parking_lot::RwLock;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
@@ -200,10 +200,10 @@ impl Default for VadState {
 /// Native audio capture wrapper using libloading
 struct NativeAudioCapture {
     _library: Library,
-    start_record: Symbol<'static, unsafe extern "C" fn()>,
-    stop_record: Symbol<'static, unsafe extern "C" fn()>,
-    get_audio_data: Symbol<'static, unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8>,
-    free_audio_data: Symbol<'static, unsafe extern "C" fn(*mut u8)>,
+    start_record: unsafe extern "C" fn(),
+    stop_record: unsafe extern "C" fn(),
+    get_audio_data: unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8,
+    free_audio_data: unsafe extern "C" fn(*mut u8),
     is_recording: bool,
     /// Tracks whether async initialization completed successfully
     /// The Swift library initializes in a Task block - if we call stopRecord()
@@ -222,34 +222,34 @@ impl NativeAudioCapture {
             let library = Library::new(library_path)
                 .map_err(|e| format!("Failed to load library: {}", e))?;
 
-            // We need to transmute to 'static lifetime because libloading symbols
-            // are tied to the library lifetime, but we keep the library alive
-            let start_record: Symbol<unsafe extern "C" fn()> = library
-                .get(b"startRecord")
-                .map_err(|e| format!("Failed to get startRecord: {}", e))?;
-            let start_record: Symbol<'static, unsafe extern "C" fn()> =
-                std::mem::transmute(start_record);
+            let start_record: unsafe extern "C" fn() = {
+                let sym: libloading::Symbol<unsafe extern "C" fn()> = library
+                    .get(b"startRecord")
+                    .map_err(|e| format!("Failed to get startRecord: {}", e))?;
+                *sym
+            };
 
-            let stop_record: Symbol<unsafe extern "C" fn()> = library
-                .get(b"stopRecord")
-                .map_err(|e| format!("Failed to get stopRecord: {}", e))?;
-            let stop_record: Symbol<'static, unsafe extern "C" fn()> =
-                std::mem::transmute(stop_record);
+            let stop_record: unsafe extern "C" fn() = {
+                let sym: libloading::Symbol<unsafe extern "C" fn()> = library
+                    .get(b"stopRecord")
+                    .map_err(|e| format!("Failed to get stopRecord: {}", e))?;
+                *sym
+            };
 
-            let get_audio_data: Symbol<unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8> =
-                library
-                    .get(b"getAudioData")
-                    .map_err(|e| format!("Failed to get getAudioData: {}", e))?;
-            let get_audio_data: Symbol<
-                'static,
-                unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8,
-            > = std::mem::transmute(get_audio_data);
+            let get_audio_data: unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8 = {
+                let sym: libloading::Symbol<unsafe extern "C" fn(*mut i32, *mut bool) -> *mut u8> =
+                    library
+                        .get(b"getAudioData")
+                        .map_err(|e| format!("Failed to get getAudioData: {}", e))?;
+                *sym
+            };
 
-            let free_audio_data: Symbol<unsafe extern "C" fn(*mut u8)> = library
-                .get(b"freeAudioData")
-                .map_err(|e| format!("Failed to get freeAudioData: {}", e))?;
-            let free_audio_data: Symbol<'static, unsafe extern "C" fn(*mut u8)> =
-                std::mem::transmute(free_audio_data);
+            let free_audio_data: unsafe extern "C" fn(*mut u8) = {
+                let sym: libloading::Symbol<unsafe extern "C" fn(*mut u8)> = library
+                    .get(b"freeAudioData")
+                    .map_err(|e| format!("Failed to get freeAudioData: {}", e))?;
+                *sym
+            };
 
             Ok(Self {
                 _library: library,
