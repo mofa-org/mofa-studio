@@ -2,12 +2,12 @@
 # Replaces setup_isolated_env.sh and install_all_packages.sh
 # Usage: pixi install && pixi run setup
 
-[project]
+[workspace]
 name = "mofa-studio"
 version = "0.1.0"
 description = "MoFA Studio - AI Voice Chat Application with Makepad UI and Dora dataflow"
 channels = ["conda-forge", "pytorch"]
-platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
+platforms = ["win-64"]
 
 # =============================================================================
 # CONDA DEPENDENCIES (from conda-forge and pytorch channels)
@@ -30,9 +30,7 @@ openblas = "*"
 openssl = "*"
 git-lfs = "*"
 
-# Build tools
-gcc = "*"
-gfortran = "*"
+# Build tools (gcc/gfortran not needed on Windows - MSVC is used)
 
 # LLM inference (conda-forge has pre-built wheels)
 llama-cpp-python = "*"
@@ -43,7 +41,7 @@ llama-cpp-python = "*"
 
 [pypi-dependencies]
 # NumPy (pinned for compatibility with 1.x API)
-numpy = "==1.26.4"
+numpy = ">=1.26.4,<3"
 
 # Transformers ecosystem
 transformers = "==4.45.0"
@@ -63,7 +61,7 @@ pyarrow = "*"
 scipy = "*"
 librosa = "*"
 soundfile = "*"
-webrtcvad = "*"
+webrtcvad-wheels = "*"
 pyaudio = "*"
 sounddevice = "*"
 
@@ -85,12 +83,7 @@ kokoro = "*"
 # PLATFORM-SPECIFIC FEATURES
 # =============================================================================
 
-[feature.macos-mlx]
-# MLX audio backend for Apple Silicon GPU acceleration
-# Only available on macOS with Apple Silicon
-platforms = ["osx-arm64"]
-[feature.macos-mlx.pypi-dependencies]
-mlx-audio = "*"
+# [feature.macos-mlx] - macOS only, skipped on Windows
 
 # =============================================================================
 # ENVIRONMENTS
@@ -100,8 +93,8 @@ mlx-audio = "*"
 # Default environment (CPU-only, cross-platform)
 default = { solve-group = "default" }
 
-# macOS with MLX acceleration (Apple Silicon)
-macos-mlx = { features = ["macos-mlx"], solve-group = "default" }
+# macOS with MLX acceleration (Apple Silicon) - not available on Windows
+# macos-mlx = { features = ["macos-mlx"], solve-group = "default" }
 
 # =============================================================================
 # TASKS

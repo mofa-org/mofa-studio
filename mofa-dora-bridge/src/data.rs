@@ -198,20 +198,16 @@ impl LogEntry {
 }
 
 /// Log level for filtering
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum LogLevel {
     Debug = 10,
+    #[default]
     Info = 20,
     Warning = 30,
     Error = 40,
 }
 
-impl Default for LogLevel {
-    fn default() -> Self {
-        LogLevel::Info
-    }
-}
 
 impl std::fmt::Display for LogLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -224,16 +220,17 @@ impl std::fmt::Display for LogLevel {
     }
 }
 
-impl LogLevel {
-    /// Parse from string (case-insensitive)
-    pub fn from_str(s: &str) -> Self {
-        match s.to_uppercase().as_str() {
+impl std::str::FromStr for LogLevel {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_uppercase().as_str() {
             "DEBUG" => LogLevel::Debug,
             "INFO" => LogLevel::Info,
             "WARNING" | "WARN" => LogLevel::Warning,
             "ERROR" | "ERR" => LogLevel::Error,
             _ => LogLevel::Info,
-        }
+        })
     }
 }
 

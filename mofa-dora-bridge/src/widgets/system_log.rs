@@ -196,7 +196,7 @@ impl SystemLogBridge {
             let level = json
                 .get("level")
                 .and_then(|l| l.as_str())
-                .map(LogLevel::from_str)
+                .and_then(|s| s.parse().ok())
                 .unwrap_or(LogLevel::Info);
 
             let message = json

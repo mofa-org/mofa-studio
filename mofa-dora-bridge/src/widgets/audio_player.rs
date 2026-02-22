@@ -284,6 +284,7 @@ impl AudioPlayerBridge {
     }
 
     /// Handle a dora event
+    #[allow(clippy::too_many_arguments)]
     fn handle_dora_event(
         event: Event,
         node: &mut DoraNode,
@@ -324,7 +325,7 @@ impl AudioPlayerBridge {
                         use arrow::array::AsArray;
                         data.as_string::<i32>()
                             .iter()
-                            .filter_map(|s| s)
+                            .flatten()
                             .next()
                             .map(|s| s.to_string())
                             .unwrap_or_default()

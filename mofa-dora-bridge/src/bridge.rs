@@ -49,9 +49,10 @@ use crate::error::BridgeResult;
 /// | `Connected` | Ready to send/receive data |
 /// | `Disconnecting` | Graceful shutdown in progress |
 /// | `Error` | Connection failed or was lost |
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum BridgeState {
     /// Bridge is disconnected
+    #[default]
     Disconnected,
     /// Bridge is connecting
     Connecting,
@@ -63,11 +64,6 @@ pub enum BridgeState {
     Error,
 }
 
-impl Default for BridgeState {
-    fn default() -> Self {
-        BridgeState::Disconnected
-    }
-}
 
 /// Core trait for all Dora bridges.
 ///

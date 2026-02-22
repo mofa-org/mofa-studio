@@ -16,9 +16,10 @@ use std::time::{Duration, Instant};
 use tracing::{debug, error, info, warn};
 
 /// Dataflow state
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum DataflowState {
     /// Dataflow is stopped
+    #[default]
     Stopped,
     /// Dataflow is starting
     Starting,
@@ -33,11 +34,6 @@ pub enum DataflowState {
     Error { message: String },
 }
 
-impl Default for DataflowState {
-    fn default() -> Self {
-        DataflowState::Stopped
-    }
-}
 
 impl DataflowState {
     pub fn is_running(&self) -> bool {
@@ -111,10 +107,8 @@ impl DataflowController {
         let mut missing = Vec::new();
         if let Some(parsed) = &self.parsed {
             for req in &parsed.env_requirements {
-                if req.required {
-                    if !self.env_vars.contains_key(&req.key) && std::env::var(&req.key).is_err() {
-                        missing.push(req.key.clone());
-                    }
+                if req.required && !self.env_vars.contains_key(&req.key) && std::env::var(&req.key).is_err() {
+                    missing.push(req.key.clone());
                 }
             }
         }

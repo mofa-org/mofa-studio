@@ -430,6 +430,11 @@ impl AudioState {
         self.chunks.read().len()
     }
 
+    /// Check if audio buffer is empty
+    pub fn is_empty(&self) -> bool {
+        self.chunks.read().is_empty()
+    }
+
     /// Clear all pending audio
     pub fn clear(&self) {
         self.chunks.write().clear();
