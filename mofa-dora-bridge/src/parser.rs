@@ -293,8 +293,7 @@ impl DataflowParser {
     /// Format node ID as display name
     fn format_display_name(node_id: &str) -> String {
         node_id
-            .replace('_', " ")
-            .replace('-', " ")
+            .replace(['_', '-'], " ")
             .split_whitespace()
             .map(|word| {
                 let mut chars = word.chars();

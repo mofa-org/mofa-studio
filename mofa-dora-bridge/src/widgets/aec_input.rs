@@ -532,13 +532,7 @@ impl AecInputBridge {
                 .unwrap_or_default(),
         ];
 
-        for path in candidates {
-            if path.exists() {
-                return Some(path);
-            }
-        }
-
-        None
+        candidates.into_iter().find(|path| path.exists())
     }
 
     /// Calculate RMS level from audio samples
@@ -626,7 +620,6 @@ impl AecInputBridge {
 
         // VAD state
         let mut vad_state = VadState::default();
-        let mut recording_active = false;
         let mut using_aec = aec_enabled.load(Ordering::Acquire) && aec_available;
 
         // Log config on startup (matching Python behavior)
@@ -667,7 +660,7 @@ impl AecInputBridge {
             let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Recording started without AEC (regular mic)");
         }
         is_recording.store(true, Ordering::Release);
-        recording_active = true;
+        let mut recording_active = true;
 
         // Update shared state
         if let Some(ref ss) = shared_state {
@@ -816,7 +809,7 @@ impl AecInputBridge {
                 }
 
                 // Log audio stats every 100 iterations (~1 second)
-                if debug_count % 100 == 0 && recording_active {
+                if debug_count.is_multiple_of(100) && recording_active {
                     let rms = Self::calculate_rms(&all_audio);
                     let vad_active = vad_results.iter().any(|&v| v);
                     eprintln!(
@@ -827,28 +820,27 @@ impl AecInputBridge {
 
                 // Check question_ended timer (runs even without audio)
                 let mut question_ended = false;
-                if !vad_state.is_speaking
-                    && vad_state.last_speech_end_time.is_some()
-                    && !vad_state.question_end_sent
-                {
-                    let elapsed = vad_state.last_speech_end_time.unwrap().elapsed();
-                    let threshold = vad_state.endpointer.current_threshold_ms(vad_state.question_end_silence_ms);
-                    if elapsed.as_millis() as f64 >= threshold {
-                        question_ended = true;
-                        vad_state.question_end_sent = true;
-                        info!(
-                            "Sentence complete: silence={:.0}ms >= threshold={:.0}ms (question_id={})",
-                            elapsed.as_millis() as f64, threshold, vad_state.current_question_id
-                        );
-                        let _ = Self::send_log(
-                            &mut node,
-                            &node_id,
-                            "INFO",
-                            &format!(
-                                "🔚 Sentence complete: silence={:.0}ms, threshold={:.0}ms, question_id={}",
+                if !vad_state.is_speaking && !vad_state.question_end_sent {
+                    if let Some(last_speech_end) = vad_state.last_speech_end_time {
+                        let elapsed = last_speech_end.elapsed();
+                        let threshold = vad_state.endpointer.current_threshold_ms(vad_state.question_end_silence_ms);
+                        if elapsed.as_millis() as f64 >= threshold {
+                            question_ended = true;
+                            vad_state.question_end_sent = true;
+                            info!(
+                                "Sentence complete: silence={:.0}ms >= threshold={:.0}ms (question_id={})",
                                 elapsed.as_millis() as f64, threshold, vad_state.current_question_id
-                            ),
-                        );
+                            );
+                            let _ = Self::send_log(
+                                &mut node,
+                                &node_id,
+                                "INFO",
+                                &format!(
+                                    "🔚 Sentence complete: silence={:.0}ms, threshold={:.0}ms, question_id={}",
+                                    elapsed.as_millis() as f64, threshold, vad_state.current_question_id
+                                ),
+                            );
+                        }
                     }
                 }
 
