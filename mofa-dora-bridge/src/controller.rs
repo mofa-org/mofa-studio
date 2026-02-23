@@ -467,6 +467,46 @@ impl Drop for DataflowController {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn write_temp_dataflow() -> PathBuf {
+        let path =
+            std::env::temp_dir().join(format!("mofa-studio-test-{}.yml", uuid::Uuid::new_v4()));
+        fs::write(&path, "nodes: []\n").expect("failed to write temp dataflow");
+        path
+    }
+
+    #[test]
+    fn new_with_runtime_sets_backend() {
+        let path = write_temp_dataflow();
+        let controller = DataflowController::new_with_runtime(&path, RuntimeBackend::MofaNative)
+            .expect("controller should be created");
+        assert_eq!(controller.runtime_backend(), RuntimeBackend::MofaNative);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn mofa_native_start_is_explicitly_unsupported_for_now() {
+        let path = write_temp_dataflow();
+        let mut controller =
+            DataflowController::new_with_runtime(&path, RuntimeBackend::MofaNative)
+                .expect("controller should be created");
+
+        let result = controller.start();
+        match result {
+            Err(BridgeError::UnsupportedRuntime(msg)) => {
+                assert!(msg.contains("mofa-native"));
+            }
+            other => panic!("expected UnsupportedRuntime error, got: {:?}", other),
+        }
+        let _ = fs::remove_file(path);
+    }
+}
+
 /// Dataflow status information
 #[derive(Debug, Clone)]
 pub struct DataflowStatus {
