@@ -13,19 +13,32 @@
 
 MoFA Studio is a modern, GPU-accelerated desktop application for AI voice chat and model management. Built entirely in Rust using the [Makepad](https://github.com/makepad/makepad) UI framework, it provides a beautiful, responsive interface with native performance.
 
-## ⚡ Quick Install (Pre-built Binaries)
+## Quick Start
 
-Download and install the latest release with a single command — **no Rust or Python required**:
+The fastest way to get MoFA Studio running is to use our pre-built binaries and auto-installer.
 
+### 1. Install the Output UI (Rust App)
+Download and install the cross-platform Rust binary (requires no build tools):
+
+**macOS and Linux:**
 ```bash
-# macOS / Linux
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-shell-installer.sh | sh
-
-# Windows (PowerShell)
-irm https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-shell-installer.ps1 | iex
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-installer.sh | sh
 ```
 
-> **Note:** The pre-built binary includes the Studio desktop UI app. For voice chat features (ASR/TTS), you'll additionally need to set up the Python Dora dataflow nodes — see [Voice Chat Prerequisites](#voice-chat-prerequisites).
+**Windows (PowerShell):**
+```powershell
+irm https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-installer.ps1 | iex
+```
+
+### 2. Install the AI Nodes (Python Environment)
+MoFA Studio relies on local Python models (Dora nodes) to power the AI features like text-to-speech and transcription. Install them automatically into an isolated environment:
+
+**macOS and Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/mofa-org/mofa-studio/main/install-nodes.sh | bash
+```
+
+Once both steps are complete, run the `mofa-studio` command from your terminal. When you click "Start Dataflow", the UI will automatically locate and run the isolated AI nodes.
 
 ![MoFA Studio](mofa-studio-shell/resources/mofa-logo.png)
 

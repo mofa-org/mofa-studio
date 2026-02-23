@@ -54,6 +54,13 @@ impl MoFaDebateScreen {
             if local_path.exists() {
                 return Some(local_path);
             }
+            // Third try (Tier 2 Installer): ~/.mofa/studio/apps/mofa-debate/dataflow/voice-chat.yml
+            if let Some(home) = dirs::home_dir() {
+                let global_path = home.join(".mofa").join("studio").join("apps").join("mofa-debate").join("dataflow").join("voice-chat.yml");
+                if global_path.exists() {
+                    return Some(global_path);
+                }
+            }
             None
         });
         self.dataflow_path = dataflow_path;
@@ -436,8 +443,15 @@ impl MoFaDebateScreen {
             if app_path.exists() {
                 return app_path;
             }
-            // Fallback: dataflow/voice-chat.yml (when running from app directory)
-            cwd.join("dataflow").join("voice-chat.yml")
+            // Second try: dataflow/voice-chat.yml (when running from app directory)
+            let local_path = cwd.join("dataflow").join("voice-chat.yml");
+            if local_path.exists() {
+                return local_path;
+            }
+            // Fallback (Tier 2 Installer): ~/.mofa/studio/apps/mofa-debate/dataflow/voice-chat.yml
+            dirs::home_dir()
+                .map(|h| h.join(".mofa").join("studio").join("apps").join("mofa-debate").join("dataflow").join("voice-chat.yml"))
+                .unwrap_or(local_path)
         });
 
         if !dataflow_path.exists() {

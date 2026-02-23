@@ -201,6 +201,33 @@ impl DataflowController {
             cmd.env(key, value);
         }
 
+        // Tier 2 Auto-Installer PATH Injection:
+        // If the user installed nodes via install-nodes.sh, the isolated Python environment
+        // lives in ~/.mofa/studio/.pixi/envs/default/bin. Prepend this to PATH so Dora nodes
+        // use the correct python binary and dependencies without requiring the user to
+        // manually activate the pixi environment.
+        if let Some(home) = dirs::home_dir() {
+            let pixi_bin_path = home.join(".mofa").join("studio").join(".pixi").join("envs").join("default").join("bin");
+            if pixi_bin_path.exists() {
+                // Get current PATH, or empty string if not set
+                let current_path = std::env::var_os("PATH").unwrap_or_default();
+                let mut new_path = std::ffi::OsString::new();
+                new_path.push(&pixi_bin_path);
+                
+                // On Windows uses ';', on Unix uses ':'
+                #[cfg(windows)]
+                new_path.push(";");
+                #[cfg(not(windows))]
+                new_path.push(":");
+                
+                new_path.push(current_path);
+                
+                // Inject the modified PATH into the Command specifically (not process-wide)
+                cmd.env("PATH", new_path);
+                info!("Injected Pixi environment into PATH: {:?}", pixi_bin_path);
+            }
+        }
+
         // Execute
         eprintln!("[Controller] Executing: dora start {:?} --detach", self.dataflow_path);
         info!("Starting dataflow: {:?}", self.dataflow_path);
