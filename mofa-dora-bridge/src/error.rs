@@ -68,6 +68,9 @@ pub enum BridgeError {
     #[error("Timeout: {0}")]
     Timeout(String),
 
+    #[error("Unsupported runtime backend: {0}")]
+    UnsupportedRuntime(String),
+
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
