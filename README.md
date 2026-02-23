@@ -1,11 +1,31 @@
-# MoFA Studio
+<div align="center">
 
-> AI-powered desktop voice chat application built with Rust and Makepad
+# <img src="https://raw.githubusercontent.com/mofa-org/mofa/main/assets/logo.png" width="48" alt="MoFA"> MoFA Studio
+
+**MoFA Studio - AI-powered desktop voice chat application built with Rust and Makepad**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/Rust-1.80+-000000?logo=rust)](https://www.rust-lang.org/)
+[![Stars](https://img.shields.io/github/stars/mofa-org/mofa-studio)](https://github.com/mofa-org/mofa-studio/stargazers)
+[![Discord](https://img.shields.io/discord/1345678901234567890?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/hKJZzDMMm9)
+
+</div>
 
 MoFA Studio is a modern, GPU-accelerated desktop application for AI voice chat and model management. Built entirely in Rust using the [Makepad](https://github.com/makepad/makepad) UI framework, it provides a beautiful, responsive interface with native performance.
+
+## ⚡ Quick Install (Pre-built Binaries)
+
+Download and install the latest release with a single command — **no Rust or Python required**:
+
+```bash
+# macOS / Linux
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-shell-installer.sh | sh
+
+# Windows (PowerShell)
+irm https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-shell-installer.ps1 | iex
+```
+
+> **Note:** The pre-built binary includes the Studio desktop UI app. For voice chat features (ASR/TTS), you'll additionally need to set up the Python Dora dataflow nodes — see [Voice Chat Prerequisites](#voice-chat-prerequisites).
 
 ![MoFA Studio](mofa-studio-shell/resources/mofa-logo.png)
 

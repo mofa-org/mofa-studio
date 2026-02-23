@@ -7,7 +7,7 @@ members = [
     "mofa-ui",
     "apps/*",
 ]
-exclude = ["apps/mofa-asr"]
+exclude = ["apps/mofa-asr", "apps/mofa-debugger"]
 
 [workspace.package]
 version = "0.1.0"
@@ -44,3 +44,8 @@ rand = "0.8"
 
 # Dora - robotics framework for voice chat architecture
 dora-node-api = "0.4.1"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
