@@ -429,3 +429,37 @@ pub struct DataflowStatus {
     pub node_count: usize,
     pub mofa_node_count: usize,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_dataflow_controller_init() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test_dataflow.yml");
+        
+        let mut file = File::create(&file_path).unwrap();
+        writeln!(file, "nodes:\n  - id: test-node\n    custom:\n      source: python\n      args: main.py").unwrap();
+
+        let controller = DataflowController::new(&file_path);
+        assert!(controller.is_ok());
+        let controller = controller.unwrap();
+        assert_eq!(controller.state(), DataflowState::Stopped);
+    }
+    
+    #[test]
+    fn test_env_injection() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test_dataflow.yml");
+        File::create(&file_path).unwrap();
+        
+        let mut controller = DataflowController::new(&file_path).unwrap();
+        controller.set_env("TEST_KEY", "TEST_VAL");
+        
+        assert_eq!(controller.env_vars.get("TEST_KEY").map(|s| s.as_str()), Some("TEST_VAL"));
+    }
+}

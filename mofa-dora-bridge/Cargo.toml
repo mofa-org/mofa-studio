@@ -49,9 +49,11 @@ chrono = "0.4"
 
 # Futures for block_on_stream in ASR bridge event loop
 futures = "0.3"
+dirs.workspace = true
 
 [features]
 default = []
 
 [dev-dependencies]
+tempfile = "3.26.0"
 tokio-test = "0.4"
