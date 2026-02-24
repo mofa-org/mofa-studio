@@ -49,6 +49,28 @@ impl DataflowState {
     }
 }
 
+/// Runtime backend used to execute a dataflow.
+///
+/// `DoraCli` preserves current behavior.
+/// `MofaNative` is reserved for Task 15 migration work.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RuntimeBackend {
+    /// Execute dataflows via `dora` CLI.
+    #[default]
+    DoraCli,
+    /// Execute dataflows via native mofa-rs runtime (Task 15 target).
+    MofaNative,
+}
+
+impl RuntimeBackend {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RuntimeBackend::DoraCli => "dora-cli",
+            RuntimeBackend::MofaNative => "mofa-native",
+        }
+    }
+}
+
 /// Controller for managing dataflow lifecycle
 pub struct DataflowController {
     /// Path to the dataflow YAML file
@@ -61,11 +83,21 @@ pub struct DataflowController {
     env_vars: HashMap<String, String>,
     /// Dora daemon process (if we started it)
     daemon_process: Option<Child>,
+    /// Runtime backend to use for lifecycle operations
+    runtime_backend: RuntimeBackend,
 }
 
 impl DataflowController {
     /// Create a new controller for a dataflow
     pub fn new(dataflow_path: impl AsRef<Path>) -> BridgeResult<Self> {
+        Self::new_with_runtime(dataflow_path, RuntimeBackend::DoraCli)
+    }
+
+    /// Create a new controller for a dataflow with an explicit runtime backend.
+    pub fn new_with_runtime(
+        dataflow_path: impl AsRef<Path>,
+        runtime_backend: RuntimeBackend,
+    ) -> BridgeResult<Self> {
         let original_path = dataflow_path.as_ref();
         // Canonicalize to avoid surprises when callers pass relative paths coming
         // from different working directories. If canonicalize fails (e.g. missing
@@ -83,6 +115,7 @@ impl DataflowController {
             state: Arc::new(RwLock::new(DataflowState::Stopped)),
             env_vars: HashMap::new(),
             daemon_process: None,
+            runtime_backend,
         })
     }
 
@@ -94,6 +127,11 @@ impl DataflowController {
     /// Get current state
     pub fn state(&self) -> DataflowState {
         self.state.read().clone()
+    }
+
+    /// Get the configured runtime backend.
+    pub fn runtime_backend(&self) -> RuntimeBackend {
+        self.runtime_backend
     }
 
     /// Set environment variable for the dataflow
@@ -123,6 +161,13 @@ impl DataflowController {
 
     /// Ensure dora daemon is running
     pub fn ensure_daemon(&mut self) -> BridgeResult<()> {
+        if self.runtime_backend != RuntimeBackend::DoraCli {
+            return Err(BridgeError::UnsupportedRuntime(format!(
+                "backend '{}' does not use dora daemon",
+                self.runtime_backend.as_str()
+            )));
+        }
+
         // Check if daemon is already running by using `dora list`
         // If it succeeds, daemon is running
         let status = Command::new("dora")
@@ -158,6 +203,17 @@ impl DataflowController {
 
     /// Start the dataflow
     pub fn start(&mut self) -> BridgeResult<String> {
+        if self.runtime_backend != RuntimeBackend::DoraCli {
+            let msg = format!(
+                "backend '{}' is not wired for start() yet",
+                self.runtime_backend.as_str()
+            );
+            *self.state.write() = DataflowState::Error {
+                message: msg.clone(),
+            };
+            return Err(BridgeError::UnsupportedRuntime(msg));
+        }
+
         // Check current state
         {
             let state = self.state.read();
@@ -202,7 +258,10 @@ impl DataflowController {
         }
 
         // Execute
-        eprintln!("[Controller] Executing: dora start {:?} --detach", self.dataflow_path);
+        eprintln!(
+            "[Controller] Executing: dora start {:?} --detach",
+            self.dataflow_path
+        );
         info!("Starting dataflow: {:?}", self.dataflow_path);
         let output = cmd.output().map_err(|e| {
             eprintln!("[Controller] FAILED to execute dora: {}", e);
@@ -268,6 +327,13 @@ impl DataflowController {
 
     /// Stop the dataflow with options
     fn stop_with_options(&mut self, grace_duration: Option<Duration>) -> BridgeResult<()> {
+        if self.runtime_backend != RuntimeBackend::DoraCli {
+            return Err(BridgeError::UnsupportedRuntime(format!(
+                "backend '{}' is not wired for stop() yet",
+                self.runtime_backend.as_str()
+            )));
+        }
+
         let dataflow_id = {
             let state = self.state.read();
             match &*state {
@@ -315,6 +381,13 @@ impl DataflowController {
 
     /// Get dataflow status
     pub fn get_status(&self) -> BridgeResult<DataflowStatus> {
+        if self.runtime_backend != RuntimeBackend::DoraCli {
+            return Err(BridgeError::UnsupportedRuntime(format!(
+                "backend '{}' is not wired for get_status() yet",
+                self.runtime_backend.as_str()
+            )));
+        }
+
         let state = self.state.read().clone();
 
         match state {
@@ -391,6 +464,46 @@ impl Drop for DataflowController {
         if let Some(mut daemon) = self.daemon_process.take() {
             let _ = daemon.kill();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn write_temp_dataflow() -> PathBuf {
+        let path =
+            std::env::temp_dir().join(format!("mofa-studio-test-{}.yml", uuid::Uuid::new_v4()));
+        fs::write(&path, "nodes: []\n").expect("failed to write temp dataflow");
+        path
+    }
+
+    #[test]
+    fn new_with_runtime_sets_backend() {
+        let path = write_temp_dataflow();
+        let controller = DataflowController::new_with_runtime(&path, RuntimeBackend::MofaNative)
+            .expect("controller should be created");
+        assert_eq!(controller.runtime_backend(), RuntimeBackend::MofaNative);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn mofa_native_start_is_explicitly_unsupported_for_now() {
+        let path = write_temp_dataflow();
+        let mut controller =
+            DataflowController::new_with_runtime(&path, RuntimeBackend::MofaNative)
+                .expect("controller should be created");
+
+        let result = controller.start();
+        match result {
+            Err(BridgeError::UnsupportedRuntime(msg)) => {
+                assert!(msg.contains("mofa-native"));
+            }
+            other => panic!("expected UnsupportedRuntime error, got: {:?}", other),
+        }
+        let _ = fs::remove_file(path);
     }
 }
 
