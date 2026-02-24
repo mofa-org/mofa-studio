@@ -36,25 +36,23 @@ pub enum AecControlCommand {
     SetAecEnabled(bool),
 }
 
-/// Adaptive endpoint detector that adjusts silence threshold based on speaker pace.
+/// Adaptive endpoint detector using sliding-window max-gap.
 ///
-/// Uses percentile-based threshold: sorts recent gaps and picks P90 + margin as
-/// the sentence boundary threshold. This naturally separates short intra-sentence
-/// pauses (breathing, word gaps) from longer inter-sentence silences.
+/// Tracks the last N silence gaps between speech bursts. The largest gap in the
+/// window is the sentence boundary threshold — any silence exceeding it means
+/// the sentence is complete.
 ///
-/// Example: gaps = [120, 150, 180, 200, 130, 160, 140, 1500, 170, 190]
-///   sorted = [120, 130, 140, 150, 160, 170, 180, 190, 200, 1500]
-///   P90 = 200ms (index 9 of 10), margin = 1.5 → threshold = 300ms → clamped to 500ms
-///   The 1500ms gap (actual sentence boundary) exceeds threshold → detected correctly.
+/// Example: gaps = [120, 150, 800, 130, 110, 140, 160]
+///   max_gap = 800ms → threshold = 800ms
+///   If current silence reaches 800ms → sentence complete
+///   Next speech adds new gap, window slides, threshold adapts.
+///
+/// This naturally tracks the speaker's pace: fast speakers have smaller max gaps,
+/// slow speakers have larger ones. The threshold updates with every new gap.
 struct AdaptiveEndpointer {
     enabled: bool,
     gap_history: VecDeque<f64>,
     window_size: usize,
-    /// Percentile to use (0.0-1.0), default 0.85 — picks the gap value below which
-    /// this fraction of gaps fall. Gaps above this are likely sentence boundaries.
-    percentile: f64,
-    /// Margin multiplier applied on top of the percentile value, default 1.5
-    margin: f64,
     min_threshold_ms: f64,
     max_threshold_ms: f64,
     last_speech_end: Option<Instant>,
@@ -67,20 +65,16 @@ impl AdaptiveEndpointer {
             .map(|v| v != "false" && v != "0")
             .unwrap_or(true);
         let window_size = std::env::var("ADAPTIVE_WINDOW_SIZE")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(20);
-        let percentile = std::env::var("ADAPTIVE_PERCENTILE")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(0.85);
-        let margin = std::env::var("ADAPTIVE_MARGIN")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(1.5);
+            .ok().and_then(|s| s.parse().ok()).unwrap_or(10);
         let min_threshold_ms = std::env::var("ADAPTIVE_MIN_MS")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(100.0);
+            .ok().and_then(|s| s.parse().ok()).unwrap_or(500.0);
         let max_threshold_ms = std::env::var("ADAPTIVE_MAX_MS")
             .ok().and_then(|s| s.parse().ok()).unwrap_or(3000.0);
 
         if enabled {
             info!(
-                "Adaptive endpointer enabled: window={}, P{:.0}×{}, range=[{}ms, {}ms]",
-                window_size, percentile * 100.0, margin, min_threshold_ms, max_threshold_ms
+                "Adaptive endpointer enabled: window={}, range=[{}ms, {}ms]",
+                window_size, min_threshold_ms, max_threshold_ms
             );
         }
 
@@ -88,8 +82,6 @@ impl AdaptiveEndpointer {
             enabled,
             gap_history: VecDeque::with_capacity(window_size + 1),
             window_size,
-            percentile,
-            margin,
             min_threshold_ms,
             max_threshold_ms,
             last_speech_end: None,
@@ -114,9 +106,12 @@ impl AdaptiveEndpointer {
         self.last_speech_end = Some(Instant::now());
     }
 
-    /// Returns adaptive threshold using percentile of recent gaps, or fallback if insufficient data
+    /// Returns the 75th-percentile gap in the sliding window as the sentence threshold.
+    /// Using P75 instead of max prevents one long outlier pause from inflating
+    /// the threshold for all subsequent sentences.
+    /// Falls back to `fallback` if not enough data yet.
     fn current_threshold_ms(&mut self, fallback: f64) -> f64 {
-        if !self.enabled || self.gap_history.len() < 5 {
+        if !self.enabled || self.gap_history.len() < 2 {
             return fallback;
         }
 
@@ -124,21 +119,18 @@ impl AdaptiveEndpointer {
         let mut sorted: Vec<f64> = self.gap_history.iter().copied().collect();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-        // P-th percentile: value below which P% of gaps fall
-        let idx = ((sorted.len() as f64 - 1.0) * self.percentile).round() as usize;
-        let p_value = sorted[idx.min(sorted.len() - 1)];
+        // P75 index (round up)
+        let p75_idx = ((sorted.len() as f64 * 0.75).ceil() as usize).min(sorted.len() - 1);
+        let p75_gap = sorted[p75_idx];
+        let threshold = p75_gap.clamp(self.min_threshold_ms, self.max_threshold_ms);
 
-        // Threshold = percentile value × margin
-        // Gaps representing normal intra-sentence pauses cluster below p_value.
-        // A gap exceeding p_value × margin is an outlier = sentence boundary.
-        let threshold = (p_value * self.margin).clamp(self.min_threshold_ms, self.max_threshold_ms);
-
-        // Log when threshold changes significantly (>150ms shift)
-        if (threshold - self.last_logged_threshold).abs() > 150.0 {
-            let median_idx = sorted.len() / 2;
+        // Log when threshold changes significantly (>200ms shift)
+        if (threshold - self.last_logged_threshold).abs() > 200.0 {
+            let max_gap = sorted.last().copied().unwrap_or(0.0);
+            let min_gap = sorted.first().copied().unwrap_or(0.0);
             info!(
-                "Adaptive endpoint threshold: {:.0}ms (P{:.0}={:.0}ms, median={:.0}ms, samples={})",
-                threshold, self.percentile * 100.0, p_value, sorted[median_idx], sorted.len()
+                "Adaptive threshold: {:.0}ms (P75={:.0}ms, max={:.0}ms, min={:.0}ms, window={})",
+                threshold, p75_gap, max_gap, min_gap, self.gap_history.len()
             );
             self.last_logged_threshold = threshold;
         }
@@ -148,10 +140,19 @@ impl AdaptiveEndpointer {
 }
 
 /// VAD segmentation state
+///
+/// Two-level buffering:
+/// - `audio_segment_buffer`: accumulates audio within a single speech burst
+/// - `sentence_buffer`: accumulates all speech bursts (+ silence gaps) within a sentence
+///
+/// Audio is only sent to ASR when a full sentence is detected (question_ended)
+/// or the sentence buffer exceeds max size.
 struct VadState {
     is_speaking: bool,
     speech_buffer: Vec<Vec<f32>>,
     audio_segment_buffer: Vec<f32>,
+    /// Accumulates all audio for the current sentence (across speech/silence cycles)
+    sentence_buffer: Vec<f32>,
     silence_count: usize,
     speech_start_threshold: usize,
     speech_end_threshold: usize,
@@ -159,7 +160,6 @@ struct VadState {
     max_segment_size: usize,
     question_end_silence_ms: f64,
     last_speech_end_time: Option<Instant>,
-    max_exceeded: bool,
     question_end_sent: bool,
     current_question_id: u32,
     endpointer: AdaptiveEndpointer,
@@ -176,18 +176,18 @@ impl Default for VadState {
         let question_end_silence_ms = std::env::var("QUESTION_END_SILENCE_MS")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(3000.0); // Default 3000ms (matching mac_aec_simple_segmentation.py)
+            .unwrap_or(1500.0); // Default 1500ms — balances responsiveness vs sentence completeness
 
         Self {
             is_speaking: false,
             speech_buffer: Vec::new(),
             audio_segment_buffer: Vec::new(),
+            sentence_buffer: Vec::new(),
             silence_count: 0,
             speech_start_threshold: 3,      // Frames of speech to start
             speech_end_threshold,           // From env or default 10 frames (~100ms)
             min_segment_size: 4800,         // 0.3s at 16kHz
             max_segment_size: 160000,       // 10s at 16kHz
-            max_exceeded: false,
             question_end_silence_ms,        // From env or default 3000ms
             last_speech_end_time: None,
             question_end_sent: false,
@@ -826,6 +826,7 @@ impl AecInputBridge {
                 }
 
                 // Check question_ended timer (runs even without audio)
+                // When sentence is complete, send the accumulated sentence_buffer to ASR
                 let mut question_ended = false;
                 if !vad_state.is_speaking
                     && vad_state.last_speech_end_time.is_some()
@@ -836,42 +837,74 @@ impl AecInputBridge {
                     if elapsed.as_millis() as f64 >= threshold {
                         question_ended = true;
                         vad_state.question_end_sent = true;
+                        let sentence_duration_ms = vad_state.sentence_buffer.len() as f64 / 16.0;
                         info!(
-                            "Sentence complete: silence={:.0}ms >= threshold={:.0}ms (question_id={})",
-                            elapsed.as_millis() as f64, threshold, vad_state.current_question_id
+                            "Sentence complete: silence={:.0}ms >= threshold={:.0}ms, sentence={:.0}ms (question_id={})",
+                            elapsed.as_millis() as f64, threshold, sentence_duration_ms, vad_state.current_question_id
                         );
                         let _ = Self::send_log(
                             &mut node,
                             &node_id,
                             "INFO",
                             &format!(
-                                "🔚 Sentence complete: silence={:.0}ms, threshold={:.0}ms, question_id={}",
-                                elapsed.as_millis() as f64, threshold, vad_state.current_question_id
+                                "🔚 Sentence complete: silence={:.0}ms, threshold={:.0}ms, sentence={:.0}ms, question_id={}",
+                                elapsed.as_millis() as f64, threshold, sentence_duration_ms, vad_state.current_question_id
                             ),
                         );
                     }
                 }
 
-                // Send question_ended signal
+                // On question_ended: send the full sentence audio to ASR, then reset
                 if question_ended {
                     let old_qid = vad_state.current_question_id;
-                    let _ = Self::send_log(
-                        &mut node,
-                        &node_id,
-                        "INFO",
-                        &format!("📤 SENDING question_ended with OLD question_id={}", old_qid),
-                    );
+
+                    // Send the accumulated sentence buffer as one complete audio_segment
+                    if vad_state.sentence_buffer.len() >= vad_state.min_segment_size {
+                        let sentence = std::mem::take(&mut vad_state.sentence_buffer);
+                        let sentence_duration_ms = sentence.len() as f64 / 16.0;
+                        if let Err(e) = Self::send_audio_segment(&mut node, &sentence, old_qid) {
+                            warn!("Failed to send sentence audio_segment: {}", e);
+                        } else {
+                            info!(
+                                "Sent full sentence: {} samples, {:.0}ms (question_id={})",
+                                sentence.len(), sentence_duration_ms, old_qid
+                            );
+                            let _ = Self::send_log(
+                                &mut node,
+                                &node_id,
+                                "INFO",
+                                &format!(
+                                    "🎵 SENTENCE sent with question_id={} ({} samples, {:.0}ms)",
+                                    old_qid, sentence.len(), sentence_duration_ms
+                                ),
+                            );
+                        }
+                    } else {
+                        let _ = Self::send_log(
+                            &mut node,
+                            &node_id,
+                            "INFO",
+                            &format!(
+                                "⏭️ Sentence too short ({} samples), skipping (question_id={})",
+                                vad_state.sentence_buffer.len(), old_qid
+                            ),
+                        );
+                        vad_state.sentence_buffer.clear();
+                    }
+
+                    // Send question_ended signal
                     if let Err(e) = Self::send_question_ended(&mut node, old_qid) {
                         warn!("Failed to send question_ended: {}", e);
                     }
-                    // Generate new question_id for next question
+
+                    // Generate new question_id for next sentence
                     let new_qid = rand::random::<u32>() % 900000 + 100000;
                     vad_state.current_question_id = new_qid;
                     let _ = Self::send_log(
                         &mut node,
                         &node_id,
                         "INFO",
-                        &format!("🆕 GENERATED NEW question_id={} for NEXT question", new_qid),
+                        &format!("🆕 NEW question_id={} for next sentence", new_qid),
                     );
                 }
 
@@ -896,7 +929,6 @@ impl AecInputBridge {
 
                 let mut speech_started = false;
                 let mut speech_ended = false;
-                let mut audio_segment: Option<Vec<f32>> = None;
 
                 if vad_result {
                     // Speech detected
@@ -910,26 +942,21 @@ impl AecInputBridge {
                             vad_state.question_end_sent = false;
                             vad_state.endpointer.record_speech_start();
 
-                            // Start segment buffer
+                            // Start segment buffer with pre-speech frames
                             vad_state.audio_segment_buffer.clear();
                             for buf in &vad_state.speech_buffer {
                                 vad_state.audio_segment_buffer.extend(buf);
                             }
 
                             info!(
-                                "Speech started (question_id={})",
-                                vad_state.current_question_id
+                                "Speech started (question_id={}, sentence_buf={} samples)",
+                                vad_state.current_question_id, vad_state.sentence_buffer.len()
                             );
                         }
                     } else {
-                        // Continue segment
+                        // Continue speech burst
                         vad_state.audio_segment_buffer.extend(&all_audio);
                         vad_state.silence_count = 0;
-
-                        // Flag when max size exceeded — actual cut deferred to next silence
-                        if vad_state.audio_segment_buffer.len() >= vad_state.max_segment_size {
-                            vad_state.max_exceeded = true;
-                        }
                     }
                 } else {
                     // No speech
@@ -937,49 +964,57 @@ impl AecInputBridge {
                         vad_state.audio_segment_buffer.extend(&all_audio);
                         vad_state.silence_count += num_chunks;
 
-                        // When max exceeded, cut on any silence (threshold=1 frame)
-                        // Also hard-cut at 1.5x max as absolute safety ceiling
-                        let effective_threshold = if vad_state.max_exceeded {
-                            1 // Cut on first silent frame after max exceeded
-                        } else {
-                            vad_state.speech_end_threshold
-                        };
-                        let hard_ceiling = vad_state.max_segment_size + (vad_state.max_segment_size / 2);
-                        let force_cut = vad_state.audio_segment_buffer.len() >= hard_ceiling;
-
-                        if vad_state.silence_count >= effective_threshold || force_cut {
-                            // Speech ended
-                            if vad_state.audio_segment_buffer.len() >= vad_state.min_segment_size {
-                                audio_segment = Some(vad_state.audio_segment_buffer.clone());
-                            }
-
+                        if vad_state.silence_count >= vad_state.speech_end_threshold {
+                            // Speech burst ended — move audio to sentence buffer (don't send yet)
+                            vad_state.sentence_buffer.extend(&vad_state.audio_segment_buffer);
                             vad_state.audio_segment_buffer.clear();
                             vad_state.is_speaking = false;
                             vad_state.silence_count = 0;
-                            vad_state.max_exceeded = false;
                             vad_state.speech_buffer.clear();
                             speech_ended = true;
                             vad_state.last_speech_end_time = Some(Instant::now());
                             vad_state.question_end_sent = false;
                             vad_state.endpointer.record_speech_end();
 
-                            let seg_duration_ms = audio_segment.as_ref().map(|s| s.len() as f64 / 16.0).unwrap_or(0.0); // 16kHz → ms
+                            let burst_ms = vad_state.sentence_buffer.len() as f64 / 16.0;
                             let current_threshold = vad_state.endpointer.current_threshold_ms(vad_state.question_end_silence_ms);
                             info!(
-                                "Speech ended: segment={:.0}ms, adaptive_threshold={:.0}ms (question_id={})",
-                                seg_duration_ms, current_threshold, vad_state.current_question_id
+                                "Speech burst ended: sentence_total={:.0}ms, adaptive_threshold={:.0}ms (question_id={})",
+                                burst_ms, current_threshold, vad_state.current_question_id
                             );
-                            let _ = Self::send_log(
-                                &mut node,
-                                &node_id,
-                                "INFO",
-                                &format!(
-                                    "🎤 Speech ended: segment={:.0}ms, next_threshold={:.0}ms, question_id={}",
-                                    seg_duration_ms, current_threshold, vad_state.current_question_id
-                                ),
-                            );
+
+                            // Safety: if sentence buffer exceeds max, force-send now
+                            if vad_state.sentence_buffer.len() >= vad_state.max_segment_size {
+                                let sentence = std::mem::take(&mut vad_state.sentence_buffer);
+                                let sentence_duration_ms = sentence.len() as f64 / 16.0;
+                                info!(
+                                    "Sentence max size reached, force-sending: {:.0}ms (question_id={})",
+                                    sentence_duration_ms, vad_state.current_question_id
+                                );
+                                let _ = Self::send_log(
+                                    &mut node,
+                                    &node_id,
+                                    "INFO",
+                                    &format!(
+                                        "🎵 SENTENCE (max size) sent with question_id={} ({} samples, {:.0}ms)",
+                                        vad_state.current_question_id, sentence.len(), sentence_duration_ms
+                                    ),
+                                );
+                                if let Err(e) = Self::send_audio_segment(&mut node, &sentence, vad_state.current_question_id) {
+                                    warn!("Failed to send max-size sentence: {}", e);
+                                }
+                                // Rotate question_id after forced send
+                                let new_qid = rand::random::<u32>() % 900000 + 100000;
+                                vad_state.current_question_id = new_qid;
+                                vad_state.question_end_sent = true;
+                            }
                         }
                     } else {
+                        // Not speaking — if we have pending sentence audio, keep accumulating
+                        // silence into the gap (so the ASR model hears natural pauses)
+                        if !vad_state.sentence_buffer.is_empty() {
+                            vad_state.sentence_buffer.extend(&all_audio);
+                        }
                         vad_state.speech_buffer.clear();
                     }
                 }
@@ -991,7 +1026,7 @@ impl AecInputBridge {
                     }
                 }
 
-                // Send dora outputs
+                // Send dora outputs (speech_started / speech_ended signals for UI)
                 if speech_started {
                     if let Err(e) = Self::send_speech_started(&mut node) {
                         warn!("Failed to send speech_started: {}", e);
@@ -999,15 +1034,6 @@ impl AecInputBridge {
                     if let Err(e) = Self::send_is_speaking(&mut node, true) {
                         warn!("Failed to send is_speaking: {}", e);
                     }
-                    let _ = Self::send_log(
-                        &mut node,
-                        &node_id,
-                        "INFO",
-                        &format!(
-                            "🎤 NEW SPEECH STARTED - question_id={}",
-                            vad_state.current_question_id
-                        ),
-                    );
                 }
 
                 if speech_ended {
@@ -1016,40 +1042,6 @@ impl AecInputBridge {
                     }
                     if let Err(e) = Self::send_is_speaking(&mut node, false) {
                         warn!("Failed to send is_speaking: {}", e);
-                    }
-                    let _ = Self::send_log(
-                        &mut node,
-                        &node_id,
-                        "INFO",
-                        &format!(
-                            "🔇 SPEECH ENDED - question_id={}",
-                            vad_state.current_question_id
-                        ),
-                    );
-                }
-
-                // Send audio segment for ASR
-                if let Some(segment) = audio_segment {
-                    if let Err(e) =
-                        Self::send_audio_segment(&mut node, &segment, vad_state.current_question_id)
-                    {
-                        warn!("Failed to send audio_segment: {}", e);
-                    } else {
-                        info!(
-                            "Sent audio segment: {} samples (question_id={})",
-                            segment.len(),
-                            vad_state.current_question_id
-                        );
-                        let _ = Self::send_log(
-                            &mut node,
-                            &node_id,
-                            "INFO",
-                            &format!(
-                                "🎵 AUDIO_SEGMENT sent with question_id={} ({} samples)",
-                                vad_state.current_question_id,
-                                segment.len()
-                            ),
-                        );
                     }
                 }
             }

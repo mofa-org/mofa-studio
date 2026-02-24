@@ -16,8 +16,7 @@ use std::thread;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AsrEngineId {
     Paraformer,
-    SenseVoice,
-    StepAudio2,
+    Qwen3Asr,
 }
 
 impl AsrEngineId {
@@ -25,8 +24,7 @@ impl AsrEngineId {
     pub fn node_id(&self) -> &'static str {
         match self {
             AsrEngineId::Paraformer => "mofa-asr-paraformer",
-            AsrEngineId::SenseVoice => "mofa-asr-sensevoice",
-            AsrEngineId::StepAudio2 => "mofa-asr-stepaudio2",
+            AsrEngineId::Qwen3Asr => "mofa-asr-qwen3",
         }
     }
 
@@ -34,8 +32,7 @@ impl AsrEngineId {
     pub fn binary_name(&self) -> &'static str {
         match self {
             AsrEngineId::Paraformer => "dora-funasr-mlx",
-            AsrEngineId::SenseVoice => "dora-funasr-nano-mlx",
-            AsrEngineId::StepAudio2 => "dora-step-audio2-mlx",
+            AsrEngineId::Qwen3Asr => "dora-qwen3-asr-mlx",
         }
     }
 }
@@ -43,16 +40,14 @@ impl AsrEngineId {
 /// Manages ASR engine child processes
 struct AsrProcessManager {
     paraformer: Option<std::process::Child>,
-    sensevoice: Option<std::process::Child>,
-    stepaudio2: Option<std::process::Child>,
+    qwen3_asr: Option<std::process::Child>,
 }
 
 impl AsrProcessManager {
     fn new() -> Self {
         Self {
             paraformer: None,
-            sensevoice: None,
-            stepaudio2: None,
+            qwen3_asr: None,
         }
     }
 
@@ -89,8 +84,7 @@ impl AsrProcessManager {
                 );
                 match engine {
                     AsrEngineId::Paraformer => self.paraformer = Some(child),
-                    AsrEngineId::SenseVoice => self.sensevoice = Some(child),
-                    AsrEngineId::StepAudio2 => self.stepaudio2 = Some(child),
+                    AsrEngineId::Qwen3Asr => self.qwen3_asr = Some(child),
                 }
             }
             Err(e) => {
@@ -102,8 +96,7 @@ impl AsrProcessManager {
     fn kill_engine(&mut self, engine: AsrEngineId) {
         let child = match engine {
             AsrEngineId::Paraformer => &mut self.paraformer,
-            AsrEngineId::SenseVoice => &mut self.sensevoice,
-            AsrEngineId::StepAudio2 => &mut self.stepaudio2,
+            AsrEngineId::Qwen3Asr => &mut self.qwen3_asr,
         };
         if let Some(ref mut c) = child {
             log::info!("Killing ASR engine {:?} (pid={})", engine, c.id());
@@ -115,8 +108,7 @@ impl AsrProcessManager {
 
     fn kill_all(&mut self) {
         self.kill_engine(AsrEngineId::Paraformer);
-        self.kill_engine(AsrEngineId::SenseVoice);
-        self.kill_engine(AsrEngineId::StepAudio2);
+        self.kill_engine(AsrEngineId::Qwen3Asr);
     }
 
     /// Find binary path - checks node-hub crate target dirs, workspace target dirs, then PATH

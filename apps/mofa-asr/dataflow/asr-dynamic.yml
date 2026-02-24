@@ -1,6 +1,6 @@
-# MoFA ASR Dataflow - Dual ASR Engines (Dynamic Nodes, Separate Processes)
+# MoFA ASR Dataflow - Dynamic Nodes, Separate Processes
 #
-# Pipeline: Mic → [Paraformer + SenseVoice] → Chat Output → UI
+# Pipeline: Mic → [Paraformer + Qwen3-ASR] → Chat Output → UI
 #
 # All nodes are dynamic. ASR engines are spawned as separate child processes
 # by mofa-asr (using --name flag for init_from_node_id). This avoids MLX
@@ -30,19 +30,8 @@ nodes:
       - processing_time
       - log
 
-  # ASR 2 - SenseVoice (multilingual) - spawned as child process
-  - id: mofa-asr-sensevoice
-    path: dynamic
-    inputs:
-      audio: mofa-mic-input/audio_segment
-    outputs:
-      - transcription
-      - language_detected
-      - processing_time
-      - log
-
-  # ASR 3 - StepAudio2 (multilingual, Whisper+Qwen) - spawned as child process
-  - id: mofa-asr-stepaudio2
+  # ASR 2 - Qwen3-ASR (30+ languages, ~30x RT) - spawned as child process
+  - id: mofa-asr-qwen3
     path: dynamic
     inputs:
       audio: mofa-mic-input/audio_segment
@@ -59,11 +48,8 @@ nodes:
       paraformer_text:
         source: mofa-asr-paraformer/transcription
         queue_size: 1000
-      sensevoice_text:
-        source: mofa-asr-sensevoice/transcription
-        queue_size: 1000
-      stepaudio2_text:
-        source: mofa-asr-stepaudio2/transcription
+      qwen3_text:
+        source: mofa-asr-qwen3/transcription
         queue_size: 1000
     outputs:
       - control
@@ -78,17 +64,11 @@ nodes:
       paraformer_text:
         source: mofa-asr-paraformer/transcription
         queue_size: 1000
-      sensevoice_log:
-        source: mofa-asr-sensevoice/log
+      qwen3_log:
+        source: mofa-asr-qwen3/log
         queue_size: 1000
-      sensevoice_text:
-        source: mofa-asr-sensevoice/transcription
-        queue_size: 1000
-      stepaudio2_log:
-        source: mofa-asr-stepaudio2/log
-        queue_size: 1000
-      stepaudio2_text:
-        source: mofa-asr-stepaudio2/transcription
+      qwen3_text:
+        source: mofa-asr-qwen3/transcription
         queue_size: 1000
       mic_input_log:
         source: mofa-mic-input/log

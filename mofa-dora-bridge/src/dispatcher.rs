@@ -117,7 +117,7 @@ impl DynamicNodeDispatcher {
                     info!("Skipping ParticipantPanel bridge - consolidated into AudioPlayerBridge");
                     continue;
                 }
-                MofaNodeType::AsrParaformer | MofaNodeType::AsrSenseVoice | MofaNodeType::AsrStepAudio2 => {
+                MofaNodeType::AsrParaformer | MofaNodeType::AsrQwen3Asr => {
                     // ASR engines run as separate OS processes (not dynamic bridges)
                     // to avoid MLX Metal GPU crashes from concurrent thread access.
                     // Dora manages their lifecycle via build+path in the YAML.
@@ -268,9 +268,9 @@ impl DynamicNodeDispatcher {
         // Wait for dataflow to initialize and register dynamic nodes
         // This is necessary because `dora start --detach` returns immediately
         // With complex dataflows that have build commands, this can take 10-30+ seconds
-        eprintln!("[Dispatcher] Waiting 10 seconds for dataflow to initialize...");
+        eprintln!("[Dispatcher] Waiting 5 seconds for dataflow to initialize...");
         info!("Waiting for dataflow to initialize (builds may take time)...");
-        std::thread::sleep(std::time::Duration::from_secs(10));
+        std::thread::sleep(std::time::Duration::from_secs(5));
         eprintln!("[Dispatcher] Wait complete, creating bridges...");
 
         // Create bridges if not already created
