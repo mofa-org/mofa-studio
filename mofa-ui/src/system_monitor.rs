@@ -1,17 +1,26 @@
-//! Background system monitor for CPU, memory, and GPU usage
+//! Background system monitor for CPU, memory, GPU, network, and disk usage
 //!
-//! This module provides a thread-safe system monitor that polls CPU, memory,
-//! and GPU usage in a background thread, keeping the UI thread free.
+//! This module provides a thread-safe system monitor that polls system metrics
+//! in a background thread, keeping the UI thread free.
 //!
-//! GPU monitoring:
+//! ## Metrics Available
+//!
+//! - **CPU**: Global CPU usage percentage
+//! - **Memory**: RAM usage percentage
+//! - **GPU**: GPU utilization (macOS via IOKit, Linux/Windows via NVML planned)
+//! - **VRAM**: Video memory usage percentage
+//! - **Network**: Bytes sent/received per second
+//! - **Disk**: Bytes read/written per second
+//!
+//! ## GPU monitoring:
 //! - macOS: Uses IOKit via `ioreg` command to query GPU statistics
 //! - Linux/Windows with NVIDIA: Uses nvml-wrapper (commented out, enable if needed)
 
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::thread;
-use std::time::Duration;
-use sysinfo::System;
+use std::time::{Duration, Instant};
+use sysinfo::{System, Networks, Disks};
 
 /// Shared system stats, updated by background thread
 struct SystemStats {
@@ -25,6 +34,14 @@ struct SystemStats {
     vram_usage: AtomicU32,
     /// Whether GPU monitoring is available
     gpu_available: AtomicBool,
+    /// Network bytes transmitted per second
+    network_tx_bytes: AtomicU64,
+    /// Network bytes received per second
+    network_rx_bytes: AtomicU64,
+    /// Disk bytes read per second
+    disk_read_bytes: AtomicU64,
+    /// Disk bytes written per second
+    disk_write_bytes: AtomicU64,
 }
 
 impl SystemStats {
@@ -35,12 +52,62 @@ impl SystemStats {
             gpu_usage: AtomicU32::new(0),
             vram_usage: AtomicU32::new(0),
             gpu_available: AtomicBool::new(false),
+            network_tx_bytes: AtomicU64::new(0),
+            network_rx_bytes: AtomicU64::new(0),
+            disk_read_bytes: AtomicU64::new(0),
+            disk_write_bytes: AtomicU64::new(0),
         }
     }
 }
 
 /// Global system monitor instance
 static SYSTEM_MONITOR: OnceLock<Arc<SystemStats>> = OnceLock::new();
+
+// ============================================================================ 
+// Network and Disk I/O snapshot helpers
+// ============================================================================
+
+/// Snapshot of network statistics for rate calculation
+struct NetworkSnapshot {
+    tx_bytes: u64,
+    rx_bytes: u64,
+}
+
+impl NetworkSnapshot {
+    fn capture(networks: &Networks) -> Self {
+        let mut tx_bytes = 0u64;
+        let mut rx_bytes = 0u64;
+        
+        for (_interface_name, network) in networks.iter() {
+            tx_bytes += network.transmitted();
+            rx_bytes += network.received();
+        }
+        
+        Self { tx_bytes, rx_bytes }
+    }
+}
+
+/// Snapshot of disk statistics for rate calculation
+struct DiskSnapshot {
+    read_bytes: u64,
+    write_bytes: u64,
+}
+
+impl DiskSnapshot {
+    fn capture(disks: &Disks) -> Self {
+        let mut read_bytes = 0u64;
+        let mut write_bytes = 0u64;
+        
+        for disk in disks.iter() {
+            // sysinfo 0.32: DiskUsage has read_bytes and written_bytes fields
+            let usage = disk.usage();
+            read_bytes += usage.read_bytes;
+            write_bytes += usage.written_bytes;
+        }
+        
+        Self { read_bytes, write_bytes }
+    }
+}
 
 // ============================================================================
 // macOS GPU monitoring using IOKit via ioreg command
@@ -205,7 +272,21 @@ pub fn start_system_monitor() {
                     log::info!("GPU monitoring not available (NVIDIA support commented out, enable in system_monitor.rs)");
                 }
 
+                // Initialize network and disk monitoring
+                let mut networks = Networks::new_with_refreshed_list();
+                let mut disks = Disks::new_with_refreshed_list();
+                let mut last_network_stats = NetworkSnapshot::capture(&networks);
+                let mut last_disk_stats = DiskSnapshot::capture(&disks);
+                let mut last_time = Instant::now();
+
                 loop {
+                    // Sleep first to measure rate over interval
+                    thread::sleep(Duration::from_secs(1));
+
+                    let now = Instant::now();
+                    let elapsed_secs = now.duration_since(last_time).as_secs_f64();
+                    last_time = now;
+
                     // Refresh CPU and memory
                     sys.refresh_cpu_usage();
                     sys.refresh_memory();
@@ -247,8 +328,31 @@ pub fn start_system_monitor() {
                         }
                     }
 
-                    // Sleep for 1 second
-                    thread::sleep(Duration::from_secs(1));
+                    // ========================================================
+                    // Network I/O monitoring
+                    // ========================================================
+                    networks.refresh();
+                    let current_network = NetworkSnapshot::capture(&networks);
+                    if elapsed_secs > 0.0 {
+                        let tx_rate = ((current_network.tx_bytes.saturating_sub(last_network_stats.tx_bytes)) as f64 / elapsed_secs) as u64;
+                        let rx_rate = ((current_network.rx_bytes.saturating_sub(last_network_stats.rx_bytes)) as f64 / elapsed_secs) as u64;
+                        stats_clone.network_tx_bytes.store(tx_rate, Ordering::Relaxed);
+                        stats_clone.network_rx_bytes.store(rx_rate, Ordering::Relaxed);
+                    }
+                    last_network_stats = current_network;
+
+                    // ========================================================
+                    // Disk I/O monitoring
+                    // ========================================================
+                    disks.refresh();
+                    let current_disk = DiskSnapshot::capture(&disks);
+                    if elapsed_secs > 0.0 {
+                        let read_rate = ((current_disk.read_bytes.saturating_sub(last_disk_stats.read_bytes)) as f64 / elapsed_secs) as u64;
+                        let write_rate = ((current_disk.write_bytes.saturating_sub(last_disk_stats.write_bytes)) as f64 / elapsed_secs) as u64;
+                        stats_clone.disk_read_bytes.store(read_rate, Ordering::Relaxed);
+                        stats_clone.disk_write_bytes.store(write_rate, Ordering::Relaxed);
+                    }
+                    last_disk_stats = current_disk;
                 }
             })
             .expect("Failed to spawn system monitor thread");
@@ -297,4 +401,110 @@ pub fn is_gpu_available() -> bool {
         .get()
         .map(|stats| stats.gpu_available.load(Ordering::Relaxed))
         .unwrap_or(false)
+}
+
+// ============================================================================
+// Network I/O metrics
+// ============================================================================
+
+/// Get current network transmit rate in bytes per second
+pub fn get_network_tx_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| stats.network_tx_bytes.load(Ordering::Relaxed))
+        .unwrap_or(0)
+}
+
+/// Get current network receive rate in bytes per second
+pub fn get_network_rx_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| stats.network_rx_bytes.load(Ordering::Relaxed))
+        .unwrap_or(0)
+}
+
+/// Get combined network I/O rate (tx + rx) in bytes per second
+pub fn get_network_total_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| {
+            stats.network_tx_bytes.load(Ordering::Relaxed)
+                + stats.network_rx_bytes.load(Ordering::Relaxed)
+        })
+        .unwrap_or(0)
+}
+
+/// Format network rate as human-readable string (e.g., "1.5 MB/s")
+pub fn format_network_rate(bytes_per_sec: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = KB * 1024;
+    const GB: u64 = MB * 1024;
+
+    if bytes_per_sec >= GB {
+        format!("{:.2} GB/s", bytes_per_sec as f64 / GB as f64)
+    } else if bytes_per_sec >= MB {
+        format!("{:.2} MB/s", bytes_per_sec as f64 / MB as f64)
+    } else if bytes_per_sec >= KB {
+        format!("{:.2} KB/s", bytes_per_sec as f64 / KB as f64)
+    } else {
+        format!("{} B/s", bytes_per_sec)
+    }
+}
+
+// ============================================================================
+// Disk I/O metrics
+// ============================================================================
+
+/// Get current disk read rate in bytes per second
+pub fn get_disk_read_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| stats.disk_read_bytes.load(Ordering::Relaxed))
+        .unwrap_or(0)
+}
+
+/// Get current disk write rate in bytes per second
+pub fn get_disk_write_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| stats.disk_write_bytes.load(Ordering::Relaxed))
+        .unwrap_or(0)
+}
+
+/// Get combined disk I/O rate (read + write) in bytes per second
+pub fn get_disk_total_rate() -> u64 {
+    SYSTEM_MONITOR
+        .get()
+        .map(|stats| {
+            stats.disk_read_bytes.load(Ordering::Relaxed)
+                + stats.disk_write_bytes.load(Ordering::Relaxed)
+        })
+        .unwrap_or(0)
+}
+
+/// Format disk rate as human-readable string (e.g., "150.5 MB/s")
+pub fn format_disk_rate(bytes_per_sec: u64) -> String {
+    // Reuse network formatting logic
+    format_network_rate(bytes_per_sec)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_network_rate() {
+        assert_eq!(format_network_rate(500), "500 B/s");
+        assert_eq!(format_network_rate(1024), "1.00 KB/s");
+        assert_eq!(format_network_rate(1536), "1.50 KB/s");
+        assert_eq!(format_network_rate(1048576), "1.00 MB/s");
+        assert_eq!(format_network_rate(1572864), "1.50 MB/s");
+        assert_eq!(format_network_rate(1073741824), "1.00 GB/s");
+    }
+
+    #[test]
+    fn test_format_disk_rate() {
+        assert_eq!(format_disk_rate(1024), "1.00 KB/s");
+        assert_eq!(format_disk_rate(1048576), "1.00 MB/s");
+    }
 }
