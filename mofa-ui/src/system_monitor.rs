@@ -7,14 +7,17 @@
 //!
 //! - **CPU**: Global CPU usage percentage
 //! - **Memory**: RAM usage percentage
-//! - **GPU**: GPU utilization (macOS via IOKit, Linux/Windows via NVML planned)
+//! - **GPU**: GPU utilization (macOS via IOKit, Linux/Windows via NVML for NVIDIA)
 //! - **VRAM**: Video memory usage percentage
 //! - **Network**: Bytes sent/received per second
 //! - **Disk**: Bytes read/written per second
 //!
 //! ## GPU monitoring:
-//! - macOS: Uses IOKit via `ioreg` command to query GPU statistics
-//! - Linux/Windows with NVIDIA: Uses nvml-wrapper (commented out, enable if needed)
+//! - **macOS**: Uses IOKit via `ioreg` command to query GPU statistics (Apple Silicon and Intel Macs)
+//! - **Windows/Linux**: Uses NVML (NVIDIA Management Library) for NVIDIA GPUs
+//!   - Requires NVIDIA drivers to be installed
+//!   - Supports GPU utilization and VRAM monitoring
+//!   - Falls back gracefully on non-NVIDIA systems
 
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -62,6 +65,42 @@ impl SystemStats {
 
 /// Global system monitor instance
 static SYSTEM_MONITOR: OnceLock<Arc<SystemStats>> = OnceLock::new();
+
+// ============================================================================
+// NVIDIA NVML support for Windows and Linux
+// ============================================================================
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+static NVIDIA_NVML: OnceLock<std::sync::Mutex<nvml_wrapper::Nvml>> = OnceLock::new();
+
+/// NVIDIA GPU statistics
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+struct NvidiaGpuStats {
+    gpu_utilization: Option<u32>, // 0-100
+    vram_used_mb: Option<u64>,
+    vram_total_mb: Option<u64>,
+}
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+fn query_nvidia_gpu_stats() -> Option<NvidiaGpuStats> {
+    let nvml = NVIDIA_NVML.get()?;
+    let nvml_guard = nvml.lock().ok()?;
+    
+    // Get the first GPU (index 0)
+    let device = nvml_guard.device_by_index(0).ok()?;
+    
+    let gpu_utilization = device.utilization_rates().ok().map(|rates| rates.gpu);
+    
+    let vram_info = device.memory_info().ok();
+    let vram_used_mb = vram_info.as_ref().map(|info| info.used / (1024 * 1024));
+    let vram_total_mb = vram_info.as_ref().map(|info| info.total / (1024 * 1024));
+    
+    Some(NvidiaGpuStats {
+        gpu_utilization,
+        vram_used_mb,
+        vram_total_mb,
+    })
+}
 
 // ============================================================================ 
 // Network and Disk I/O snapshot helpers
@@ -267,9 +306,41 @@ pub fn start_system_monitor() {
                     }
                 }
 
-                #[cfg(not(target_os = "macos"))]
+                // ============================================================
+                // Windows/Linux GPU monitoring (NVIDIA via NVML)
+                // ============================================================
+                #[cfg(any(target_os = "windows", target_os = "linux"))]
                 {
-                    log::info!("GPU monitoring not available (NVIDIA support commented out, enable in system_monitor.rs)");
+                    // Try to initialize NVML for NVIDIA GPU monitoring
+                    match nvml_wrapper::Nvml::init() {
+                        Ok(nvml) => {
+                            // Check if we have any NVIDIA GPUs
+                            match nvml.device_count() {
+                                Ok(count) if count > 0 => {
+                                    stats_clone.gpu_available.store(true, Ordering::Relaxed);
+                                    log::info!("GPU monitoring enabled (NVIDIA NVML) - {} GPU(s) detected", count);
+                                    
+                                    // Store NVML instance for use in the monitoring loop
+                                    // We'll use a lazy static or thread-local storage
+                                    NVIDIA_NVML.get_or_init(|| std::sync::Mutex::new(nvml));
+                                }
+                                Ok(_) => {
+                                    log::info!("No NVIDIA GPUs detected");
+                                }
+                                Err(e) => {
+                                    log::warn!("Failed to enumerate NVIDIA GPUs: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::info!("NVIDIA NVML not available: {} (this is normal for non-NVIDIA systems)", e);
+                        }
+                    }
+                }
+
+                #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+                {
+                    log::info!("GPU monitoring not available on this platform");
                 }
 
                 // Initialize network and disk monitoring
@@ -324,6 +395,28 @@ pub fn start_system_monitor() {
                             if total > 0 {
                                 let vram_pct = ((used as f64 / total as f64) * 10000.0) as u32;
                                 stats_clone.vram_usage.store(vram_pct, Ordering::Relaxed);
+                            }
+                        }
+                    }
+
+                    // ========================================================
+                    // Windows/Linux GPU monitoring (NVIDIA)
+                    // ========================================================
+                    #[cfg(any(target_os = "windows", target_os = "linux"))]
+                    {
+                        if let Some(gpu_stats) = query_nvidia_gpu_stats() {
+                            // GPU utilization (0-100 -> 0-10000)
+                            if let Some(util) = gpu_stats.gpu_utilization {
+                                let gpu_pct = (util as f64 * 100.0) as u32;
+                                stats_clone.gpu_usage.store(gpu_pct, Ordering::Relaxed);
+                            }
+
+                            // VRAM usage
+                            if let (Some(used), Some(total)) = (gpu_stats.vram_used_mb, gpu_stats.vram_total_mb) {
+                                if total > 0 {
+                                    let vram_pct = ((used as f64 / total as f64) * 10000.0) as u32;
+                                    stats_clone.vram_usage.store(vram_pct, Ordering::Relaxed);
+                                }
                             }
                         }
                     }
