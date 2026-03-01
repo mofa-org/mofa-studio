@@ -9,7 +9,7 @@ makepad-widgets.workspace = true
 mofa-dora-bridge = { path = "../mofa-dora-bridge" }
 mofa-widgets = { path = "../mofa-widgets" }
 parking_lot.workspace = true
-sysinfo = "0.32"
+sysinfo = "0.38"
 log.workspace = true
 # Audio device management
 cpal.workspace = true

@@ -36,10 +36,10 @@ uuid.workspace = true
 rand.workspace = true
 
 # Arrow for data extraction (use same version as dora workspace)
-arrow = { version = "54.2.1", default-features = false }
+arrow = { version = "58.0.0", default-features = false }
 
 # Dynamic library loading for native AEC
-libloading = "0.8"
+libloading = "0.9"
 
 # ASR engines (optional, for dynamic ASR bridges)
 # Removed MLX dependencies for Linux build
