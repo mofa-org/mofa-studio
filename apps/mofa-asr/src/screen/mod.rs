@@ -10,7 +10,6 @@ mod log_panel;
 use makepad_widgets::*;
 use mofa_ui::{MofaHeroWidgetExt, MofaHeroAction, ConnectionStatus, AudioManager};
 use mofa_ui::{LedMeterWidgetExt, MicButtonWidgetExt, AecButtonWidgetExt};
-use mofa_settings::data::Preferences;
 use crate::dora_integration::{AsrEngineId, DoraIntegration, DoraEvent};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -25,8 +24,10 @@ pub fn live_design(cx: &mut Cx) {
 /// ASR Model selection
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum AsrModelSelection {
-    #[default]
     Paraformer,
+    #[default]
+    SenseVoice,
+    Both,
 }
 
 impl AsrModelSelection {
@@ -38,6 +39,8 @@ impl AsrModelSelection {
     pub fn display_name(&self) -> &'static str {
         match self {
             AsrModelSelection::Paraformer => "Paraformer",
+            AsrModelSelection::SenseVoice => "SenseVoice",
+            AsrModelSelection::Both => "Both",
         }
     }
 }
@@ -46,6 +49,7 @@ impl AsrModelSelection {
 #[derive(Clone, Debug)]
 pub struct AsrSettings {
     pub model_selection: AsrModelSelection,
+    pub sensevoice_language: String,
     pub min_audio_duration: f64,
     pub max_audio_duration: f64,
     pub warmup_enabled: bool,
@@ -54,7 +58,8 @@ pub struct AsrSettings {
 impl Default for AsrSettings {
     fn default() -> Self {
         Self {
-            model_selection: AsrModelSelection::Paraformer,
+            model_selection: AsrModelSelection::SenseVoice,
+            sensevoice_language: "auto".to_string(),
             min_audio_duration: 0.1,
             max_audio_duration: 30.0,
             warmup_enabled: true,
@@ -87,15 +92,21 @@ pub struct MoFaASRScreen {
     #[rust]
     paraformer_last_chat_count: usize,
     #[rust]
-    qwen3_chat_controller: Option<Arc<Mutex<ChatController>>>,
+    sensevoice_chat_controller: Option<Arc<Mutex<ChatController>>>,
     #[rust]
-    qwen3_last_chat_count: usize,
+    sensevoice_last_chat_count: usize,
+    #[rust]
+    stepaudio2_chat_controller: Option<Arc<Mutex<ChatController>>>,
+    #[rust]
+    stepaudio2_last_chat_count: usize,
 
     // Per-engine active state (ON/OFF toggle)
     #[rust]
     paraformer_active: bool,
     #[rust]
-    qwen3_active: bool,
+    sensevoice_active: bool,
+    #[rust]
+    stepaudio2_active: bool,
 
     // Maximized chat panel: None = all visible, Some(engine) = that panel maximized
     #[rust]
@@ -214,7 +225,8 @@ impl Widget for MoFaASRScreen {
                     if let Some(engine) = self.copy_flash_engine {
                         let btn_id = match engine {
                             AsrEngineId::Paraformer => ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_copy_btn),
-                            AsrEngineId::Qwen3Asr => ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_copy_btn),
+                            AsrEngineId::SenseVoice => ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_copy_btn),
+                            AsrEngineId::StepAudio2 => ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_copy_btn),
                         };
                         self.view.view(btn_id).apply_over(cx, live!{ draw_bg: { copied: (t) } });
                     }
@@ -224,7 +236,8 @@ impl Widget for MoFaASRScreen {
                     if let Some(engine) = self.copy_flash_engine.take() {
                         let btn_id = match engine {
                             AsrEngineId::Paraformer => ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_copy_btn),
-                            AsrEngineId::Qwen3Asr => ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_copy_btn),
+                            AsrEngineId::SenseVoice => ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_copy_btn),
+                            AsrEngineId::StepAudio2 => ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_copy_btn),
                         };
                         self.view.view(btn_id).apply_over(cx, live!{ draw_bg: { copied: 0.0 } });
                         needs_redraw = true;
@@ -261,31 +274,18 @@ impl Widget for MoFaASRScreen {
         // Ensure per-engine ChatControllers are set before any draw
         if self.paraformer_chat_controller.is_none() {
             let controller = ChatController::new_arc();
-            {
-                let mut guard = controller.lock().expect("ChatController mutex poisoned");
-                guard.dangerous_state_mut().bots.push(Bot {
-                    id: BotId::new("asr"),
-                    name: "Paraformer".to_string(),
-                    avatar: EntityAvatar::Text("P".to_string()),
-                    capabilities: BotCapabilities::new(),
-                });
-            }
             self.paraformer_chat_controller = Some(controller.clone());
             self.view.messages(ids!(paraformer_messages)).write().chat_controller = Some(controller);
         }
-        if self.qwen3_chat_controller.is_none() {
+        if self.sensevoice_chat_controller.is_none() {
             let controller = ChatController::new_arc();
-            {
-                let mut guard = controller.lock().expect("ChatController mutex poisoned");
-                guard.dangerous_state_mut().bots.push(Bot {
-                    id: BotId::new("asr"),
-                    name: "Qwen3-ASR".to_string(),
-                    avatar: EntityAvatar::Text("Q".to_string()),
-                    capabilities: BotCapabilities::new(),
-                });
-            }
-            self.qwen3_chat_controller = Some(controller.clone());
-            self.view.messages(ids!(qwen3_messages)).write().chat_controller = Some(controller);
+            self.sensevoice_chat_controller = Some(controller.clone());
+            self.view.messages(ids!(sensevoice_messages)).write().chat_controller = Some(controller);
+        }
+        if self.stepaudio2_chat_controller.is_none() {
+            let controller = ChatController::new_arc();
+            self.stepaudio2_chat_controller = Some(controller.clone());
+            self.view.messages(ids!(stepaudio2_messages)).write().chat_controller = Some(controller);
         }
         self.view.draw_walk(cx, scope, walk)
     }
@@ -343,19 +343,28 @@ impl MoFaASRScreen {
             self.toggle_engine(cx, AsrEngineId::Paraformer);
         }
 
-        // Handle Qwen3-ASR toggle
-        if self.view.button(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_toggle_btn)).clicked(actions) {
-            self.toggle_engine(cx, AsrEngineId::Qwen3Asr);
+        // Handle SenseVoice toggle
+        if self.view.button(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_toggle_btn)).clicked(actions) {
+            self.toggle_engine(cx, AsrEngineId::SenseVoice);
+        }
+
+        // Handle StepAudio2 toggle
+        if self.view.button(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_toggle_btn)).clicked(actions) {
+            self.toggle_engine(cx, AsrEngineId::StepAudio2);
         }
 
         // Handle maximize buttons (View with Hit events, not Button)
-        let sv_max = self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_maximize_btn));
-        if sv_max.finger_up(actions).is_some() {
+        let para_max = self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_maximize_btn));
+        if para_max.finger_up(actions).is_some() {
             self.toggle_maximize_chat(cx, AsrEngineId::Paraformer);
         }
-        let q3_max = self.view.view(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_maximize_btn));
-        if q3_max.finger_up(actions).is_some() {
-            self.toggle_maximize_chat(cx, AsrEngineId::Qwen3Asr);
+        let sv_max = self.view.view(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_maximize_btn));
+        if sv_max.finger_up(actions).is_some() {
+            self.toggle_maximize_chat(cx, AsrEngineId::SenseVoice);
+        }
+        let sa_max = self.view.view(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_maximize_btn));
+        if sa_max.finger_up(actions).is_some() {
+            self.toggle_maximize_chat(cx, AsrEngineId::StepAudio2);
         }
 
         // Handle log toggle button
@@ -374,8 +383,11 @@ impl MoFaASRScreen {
         if self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_copy_btn)).finger_up(actions).is_some() {
             self.copy_chat_to_clipboard(cx, AsrEngineId::Paraformer);
         }
-        if self.view.view(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_copy_btn)).finger_up(actions).is_some() {
-            self.copy_chat_to_clipboard(cx, AsrEngineId::Qwen3Asr);
+        if self.view.view(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_copy_btn)).finger_up(actions).is_some() {
+            self.copy_chat_to_clipboard(cx, AsrEngineId::SenseVoice);
+        }
+        if self.view.view(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_copy_btn)).finger_up(actions).is_some() {
+            self.copy_chat_to_clipboard(cx, AsrEngineId::StepAudio2);
         }
 
         // Handle log level filter
@@ -415,7 +427,8 @@ impl MoFaASRScreen {
     fn sync_engine_chat(&mut self, cx: &mut Cx, messages: &[mofa_dora_bridge::data::ChatMessage], engine: AsrEngineId) {
         let controller = match engine {
             AsrEngineId::Paraformer => self.paraformer_chat_controller.clone(),
-            AsrEngineId::Qwen3Asr => self.qwen3_chat_controller.clone(),
+            AsrEngineId::SenseVoice => self.sensevoice_chat_controller.clone(),
+            AsrEngineId::StepAudio2 => self.stepaudio2_chat_controller.clone(),
         };
         let controller = match controller {
             Some(c) => c,
@@ -423,7 +436,13 @@ impl MoFaASRScreen {
         };
 
         let count = {
-            let mut guard = controller.lock().expect("ChatController mutex poisoned");
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
             let state = guard.dangerous_state_mut();
             state.messages.clear();
             for msg in messages {
@@ -445,7 +464,8 @@ impl MoFaASRScreen {
 
         let (last_count, widget_id) = match engine {
             AsrEngineId::Paraformer => (&mut self.paraformer_last_chat_count, ids!(paraformer_messages)),
-            AsrEngineId::Qwen3Asr => (&mut self.qwen3_last_chat_count, ids!(qwen3_messages)),
+            AsrEngineId::SenseVoice => (&mut self.sensevoice_last_chat_count, ids!(sensevoice_messages)),
+            AsrEngineId::StepAudio2 => (&mut self.stepaudio2_last_chat_count, ids!(stepaudio2_messages)),
         };
 
         if count > *last_count {
@@ -465,19 +485,50 @@ impl MoFaASRScreen {
     fn handle_start(&mut self, cx: &mut Cx) {
         // Clear per-engine chat controllers
         if let Some(ref controller) = self.paraformer_chat_controller {
-            controller.lock().expect("ChatController mutex poisoned").dangerous_state_mut().messages.clear();
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
+            guard.dangerous_state_mut().messages.clear();
         }
-        if let Some(ref controller) = self.qwen3_chat_controller {
-            controller.lock().expect("ChatController mutex poisoned").dangerous_state_mut().messages.clear();
+        if let Some(ref controller) = self.sensevoice_chat_controller {
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
+            guard.dangerous_state_mut().messages.clear();
+        }
+        if let Some(ref controller) = self.stepaudio2_chat_controller {
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
+            guard.dangerous_state_mut().messages.clear();
         }
         self.paraformer_last_chat_count = 0;
-        self.qwen3_last_chat_count = 0;
+        self.sensevoice_last_chat_count = 0;
+        self.stepaudio2_last_chat_count = 0;
 
         self.init_dora(cx);
 
-        let mut env_vars = self.load_api_keys_from_preferences();
+        let mut env_vars = HashMap::new();
         env_vars.insert("MIN_AUDIO_DURATION".to_string(), self.settings.min_audio_duration.to_string());
         env_vars.insert("MAX_AUDIO_DURATION".to_string(), self.settings.max_audio_duration.to_string());
+
+        if self.settings.model_selection == AsrModelSelection::SenseVoice
+            || self.settings.model_selection == AsrModelSelection::Both
+        {
+            env_vars.insert("ASR_NANO_LANGUAGE".to_string(), self.settings.sensevoice_language.clone());
+        }
 
         if self.settings.warmup_enabled {
             env_vars.insert("ASR_MLX_WARMUP".to_string(), "1".to_string());
@@ -515,7 +566,8 @@ impl MoFaASRScreen {
         }
         // Reset toggle states
         self.paraformer_active = false;
-        self.qwen3_active = false;
+        self.sensevoice_active = false;
+        self.stepaudio2_active = false;
         self.update_toggle_ui(cx);
     }
 
@@ -528,7 +580,8 @@ impl MoFaASRScreen {
 
         let is_active = match engine {
             AsrEngineId::Paraformer => &mut self.paraformer_active,
-            AsrEngineId::Qwen3Asr => &mut self.qwen3_active,
+            AsrEngineId::SenseVoice => &mut self.sensevoice_active,
+            AsrEngineId::StepAudio2 => &mut self.stepaudio2_active,
         };
 
         *is_active = !*is_active;
@@ -536,8 +589,7 @@ impl MoFaASRScreen {
 
         if let Some(ref dora) = self.dora_integration {
             if now_active {
-                let env_vars = self.load_api_keys_from_preferences();
-                dora.connect_asr_engine(engine, env_vars);
+                dora.connect_asr_engine(engine);
                 self.add_log(cx, &format!("[INFO] [App] Starting {:?} engine", engine));
             } else {
                 dora.disconnect_asr_engine(engine);
@@ -560,16 +612,27 @@ impl MoFaASRScreen {
         self.view.label(ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_status))
             .set_text(cx, p_status);
 
-        // Qwen3-ASR
-        let (q_text, q_status) = if self.qwen3_active {
+        // SenseVoice
+        let (s_text, s_status) = if self.sensevoice_active {
             ("OFF", "ON")
         } else {
             ("ON", "OFF")
         };
-        self.view.button(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_toggle_btn))
-            .set_text(cx, q_text);
-        self.view.label(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_status))
-            .set_text(cx, q_status);
+        self.view.button(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_toggle_btn))
+            .set_text(cx, s_text);
+        self.view.label(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_status))
+            .set_text(cx, s_status);
+
+        // StepAudio2
+        let (st_text, st_status) = if self.stepaudio2_active {
+            ("OFF", "ON")
+        } else {
+            ("ON", "OFF")
+        };
+        self.view.button(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_toggle_btn))
+            .set_text(cx, st_text);
+        self.view.label(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_status))
+            .set_text(cx, st_status);
 
         self.view.redraw(cx);
     }
@@ -579,23 +642,29 @@ impl MoFaASRScreen {
             // Restore: show all panels
             self.maximized_chat = None;
             self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section)).set_visible(cx, true);
-            self.view.view(ids!(left_column.transcription_tab_content.chat_container.qwen3_section)).set_visible(cx, true);
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section)).set_visible(cx, true);
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section)).set_visible(cx, true);
             // Reset maximize icons to expand state
             self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_maximize_btn))
                 .apply_over(cx, live!{ draw_bg: { maximized: 0.0 } });
-            self.view.view(ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_maximize_btn))
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_maximize_btn))
+                .apply_over(cx, live!{ draw_bg: { maximized: 0.0 } });
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_maximize_btn))
                 .apply_over(cx, live!{ draw_bg: { maximized: 0.0 } });
         } else {
             // Maximize: hide other panels, show only selected
             self.maximized_chat = Some(engine);
             self.view.view(ids!(left_column.transcription_tab_content.chat_container.paraformer_section))
                 .set_visible(cx, engine == AsrEngineId::Paraformer);
-            self.view.view(ids!(left_column.transcription_tab_content.chat_container.qwen3_section))
-                .set_visible(cx, engine == AsrEngineId::Qwen3Asr);
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.sensevoice_section))
+                .set_visible(cx, engine == AsrEngineId::SenseVoice);
+            self.view.view(ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section))
+                .set_visible(cx, engine == AsrEngineId::StepAudio2);
             // Update maximize icon to collapse state
             let btn_id = match engine {
                 AsrEngineId::Paraformer => ids!(left_column.transcription_tab_content.chat_container.paraformer_section.paraformer_header.paraformer_maximize_btn),
-                AsrEngineId::Qwen3Asr => ids!(left_column.transcription_tab_content.chat_container.qwen3_section.qwen3_header.qwen3_maximize_btn),
+                AsrEngineId::SenseVoice => ids!(left_column.transcription_tab_content.chat_container.sensevoice_section.sensevoice_header.sensevoice_maximize_btn),
+                AsrEngineId::StepAudio2 => ids!(left_column.transcription_tab_content.chat_container.stepaudio2_section.stepaudio2_header.stepaudio2_maximize_btn),
             };
             self.view.view(btn_id).apply_over(cx, live!{ draw_bg: { maximized: 1.0 } });
         }
@@ -648,6 +717,7 @@ impl MoFaASRScreen {
                     self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Stopped);
                     // Reset toggle states
                     self.paraformer_active = false;
+                    self.sensevoice_active = false;
                     self.update_toggle_ui(cx);
                     // Restart CPAL mic monitoring for level meter
                     if let Some(ref mut manager) = self.audio_manager {
@@ -672,8 +742,11 @@ impl MoFaASRScreen {
             if let Some(messages) = state.chat_paraformer.read_if_dirty() {
                 self.sync_engine_chat(cx, &messages, AsrEngineId::Paraformer);
             }
-            if let Some(messages) = state.chat_qwen3.read_if_dirty() {
-                self.sync_engine_chat(cx, &messages, AsrEngineId::Qwen3Asr);
+            if let Some(messages) = state.chat_sensevoice.read_if_dirty() {
+                self.sync_engine_chat(cx, &messages, AsrEngineId::SenseVoice);
+            }
+            if let Some(messages) = state.chat_stepaudio2.read_if_dirty() {
+                self.sync_engine_chat(cx, &messages, AsrEngineId::StepAudio2);
             }
 
             // Poll SharedDoraState for system logs
@@ -820,38 +893,6 @@ impl MoFaASRScreen {
         });
 
         self.view.redraw(cx);
-    }
-
-    /// Load API keys from preferences
-    pub(super) fn load_api_keys_from_preferences(&self) -> HashMap<String, String> {
-        let mut env_vars = HashMap::new();
-
-        let prefs = Preferences::load();
-
-        for provider in &prefs.providers {
-            if let Some(ref api_key) = provider.api_key {
-                if !api_key.is_empty() {
-                    let env_var_name = match provider.id.as_str() {
-                        "openai" => "OPENAI_API_KEY".to_string(),
-                        "deepseek" => "DEEPSEEK_API_KEY".to_string(),
-                        "alibaba_cloud" => "ALIBABA_CLOUD_API_KEY".to_string(),
-                        "nvidia" => "NVIDIA_API_KEY".to_string(),
-                        id => format!("{}_API_KEY", id.to_uppercase().replace('-', "_")),
-                    };
-                    env_vars.insert(env_var_name, api_key.clone());
-                }
-            }
-        }
-
-        if let Some(provider) = prefs.get_provider("alibaba_cloud") {
-            if let Some(ref api_key) = provider.api_key {
-                if !api_key.is_empty() {
-                    env_vars.insert("DASHSCOPE_API_KEY".to_string(), api_key.clone());
-                }
-            }
-        }
-
-        env_vars
     }
 }
 
