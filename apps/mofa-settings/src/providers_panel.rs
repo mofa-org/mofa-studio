@@ -655,7 +655,7 @@ impl ProvidersPanel {
 
         for item_id in &items {
             self.view.view(item_id.clone()).apply_over(cx, live!{
-                draw_bg: { color: (normal_color) }
+                draw_bg: { selected: 0.0, hover: 0.0, color: (normal_color) }
             });
         }
 
@@ -684,22 +684,22 @@ impl ProvidersPanel {
         match selected {
             "openai" => {
                 self.view.view(ids!(scroll_view.list_container.openai_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, color: (selected_color) }
                 });
             }
             "deepseek" => {
                 self.view.view(ids!(scroll_view.list_container.deepseek_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, color: (selected_color) }
                 });
             }
             "alibaba_cloud" => {
                 self.view.view(ids!(scroll_view.list_container.alibaba_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, color: (selected_color) }
                 });
             }
             "nvidia" => {
                 self.view.view(ids!(scroll_view.list_container.nvidia_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, color: (selected_color) }
                 });
             }
             _ => {
@@ -790,9 +790,10 @@ impl ProvidersPanelRef {
                 } else {
                     if is_dark { dark_normal } else { light_normal }
                 };
+                let selected_val = if is_selected { 1.0f64 } else { 0.0f64 };
                 let text_color = if is_dark { dark_text } else { light_text };
 
-                inner.view.view(item_path).apply_over(cx, live!{ draw_bg: { color: (bg_color) } });
+                inner.view.view(item_path).apply_over(cx, live!{ draw_bg: { color: (bg_color), selected: (selected_val) } });
                 inner.view.label(label_path).apply_over(cx, live!{ draw_text: { color: (text_color) } });
             }
 
@@ -931,5 +932,31 @@ impl ProvidersPanelRef {
         if let Some(mut inner) = self.borrow_mut() {
             inner.select_provider_internal(cx, provider_id);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_providers_panel_action_selected_carries_id() {
+        let action = ProvidersPanelAction::Selected("openai".to_string());
+        match action {
+            ProvidersPanelAction::Selected(id) => assert_eq!(id, "openai"),
+            _ => panic!("Expected Selected variant"),
+        }
+    }
+
+    #[test]
+    fn test_providers_panel_action_none_is_default() {
+        let action = ProvidersPanelAction::None;
+        assert!(matches!(action, ProvidersPanelAction::None));
+    }
+
+    #[test]
+    fn test_providers_panel_action_add_provider() {
+        let action = ProvidersPanelAction::AddProviderClicked;
+        assert!(matches!(action, ProvidersPanelAction::AddProviderClicked));
     }
 }
