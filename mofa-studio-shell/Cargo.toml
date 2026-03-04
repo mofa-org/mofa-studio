@@ -2,6 +2,7 @@
 name = "mofa-studio-shell"
 version.workspace = true
 edition.workspace = true
+repository = "https://github.com/mofa-org/mofa-studio"
 
 [features]
 default = ["mofa-fm", "mofa-settings", "mofa-debate"]

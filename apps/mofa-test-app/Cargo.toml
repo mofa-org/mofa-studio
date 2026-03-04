@@ -2,6 +2,7 @@
 name = "mofa-test-app"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/mofa-org/mofa-studio"
 description = "Test application to validate mofa-ui components"
 
 [dependencies]

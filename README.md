@@ -1,11 +1,44 @@
-# MoFA Studio
+<div align="center">
 
-> AI-powered desktop voice chat application built with Rust and Makepad
+# <img src="https://raw.githubusercontent.com/mofa-org/mofa/main/assets/logo.png" width="48" alt="MoFA"> MoFA Studio
+
+**MoFA Studio - AI-powered desktop voice chat application built with Rust and Makepad**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/Rust-1.80+-000000?logo=rust)](https://www.rust-lang.org/)
+[![Stars](https://img.shields.io/github/stars/mofa-org/mofa-studio)](https://github.com/mofa-org/mofa-studio/stargazers)
+[![Discord](https://img.shields.io/discord/1345678901234567890?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/hKJZzDMMm9)
+
+</div>
 
 MoFA Studio is a modern, GPU-accelerated desktop application for AI voice chat and model management. Built entirely in Rust using the [Makepad](https://github.com/makepad/makepad) UI framework, it provides a beautiful, responsive interface with native performance.
+
+## Quick Start
+
+The fastest way to get MoFA Studio running is to use our pre-built binaries and auto-installer.
+
+### 1. Install the Output UI (Rust App)
+Download and install the cross-platform Rust binary (requires no build tools):
+
+**macOS and Linux:**
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-installer.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://github.com/mofa-org/mofa-studio/releases/latest/download/mofa-studio-installer.ps1 | iex
+```
+
+### 2. Install the AI Nodes (Python Environment)
+MoFA Studio relies on local Python models (Dora nodes) to power the AI features like text-to-speech and transcription. Install them automatically into an isolated environment:
+
+**macOS and Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/mofa-org/mofa-studio/main/install-nodes.sh | bash
+```
+
+Once both steps are complete, run the `mofa-studio` command from your terminal. When you click "Start Dataflow", the UI will automatically locate and run the isolated AI nodes.
 
 ![MoFA Studio](mofa-studio-shell/resources/mofa-logo.png)
 
