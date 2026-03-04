@@ -16,3 +16,7 @@ cpal.workspace = true
 # Log bridge
 crossbeam-channel.workspace = true
 once_cell.workspace = true
+
+# GPU monitoring for NVIDIA GPUs (Windows and Linux)
+[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
+nvml-wrapper = "0.10"
