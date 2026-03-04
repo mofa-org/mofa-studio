@@ -123,8 +123,10 @@ impl<T: Clone> DirtyVec<T> {
 
     /// Read all data if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<Vec<T>> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
+        if self.dirty.load(Ordering::Acquire) {
+            let data = self.data.read().clone();
+            self.dirty.store(false, Ordering::Release);
+            Some(data)
         } else {
             None
         }
@@ -188,8 +190,10 @@ impl<T: Clone + Default> DirtyValue<T> {
 
     /// Read value if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<T> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
+        if self.dirty.load(Ordering::Acquire) {
+            let data = self.data.read().clone();
+            self.dirty.store(false, Ordering::Release);
+            Some(data)
         } else {
             None
         }
@@ -297,8 +301,10 @@ impl ChatState {
 
     /// Read all messages if dirty
     pub fn read_if_dirty(&self) -> Option<Vec<ChatMessage>> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.messages.read().clone())
+        if self.dirty.load(Ordering::Acquire) {
+            let data = self.messages.read().clone();
+            self.dirty.store(false, Ordering::Release);
+            Some(data)
         } else {
             None
         }
