@@ -7,12 +7,14 @@ This script downloads the required FunASR models from ModelScope.
 
 import os
 import sys
+import shutil
 from pathlib import Path
 import subprocess
 
 def download_from_modelscope(model_id, save_dir):
     """Download model from ModelScope using git."""
     save_path = save_dir / model_id.split("/")[-1]
+    clone_successful = False
     
     if save_path.exists():
         print(f"✓ Model already exists: {save_path}")
@@ -43,7 +45,8 @@ def download_from_modelscope(model_id, save_dir):
                 str(save_path)
             ]
             subprocess.run(cmd_alt, check=True)
-        
+
+        clone_successful = True
         print(f"✓ Downloaded {model_id}")
         return save_path
         
@@ -55,6 +58,15 @@ def download_from_modelscope(model_id, save_dir):
         print("  macOS: brew install git git-lfs")
         print("  Linux: sudo apt-get install git git-lfs")
         return None
+    finally:
+        if not clone_successful and save_path.exist():
+            try:
+                shutil.rmtree(save_path)
+                print(f"⚠ Cleaned up incomplete download at {save_path}")
+            except Exception as cleanup_error:
+                print(f"⚠ Failed to clean up {save_path}: {cleanup_error}") 
+
+
 
 
 def download_with_python(model_id, save_dir):
