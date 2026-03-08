@@ -241,6 +241,13 @@ live_design! {
                 }
             }
 
+            ui_generator_tab = <SidebarMenuButton> {
+                text: "UI Generator"
+                draw_icon: {
+                    svg_file: dep("crate://self/resources/icons/apps.svg")
+                }
+            }
+
             // Apps container - height Fit so it adapts to content
             apps_wrapper = <View> {
                 width: Fill, height: Fit

@@ -4,11 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-default = ["mofa-fm", "mofa-settings", "mofa-debate", "mofa-asr"]
+default = ["mofa-fm", "mofa-settings", "mofa-debate", "mofa-asr", "mofa-ui-generator"]
 mofa-fm = ["dep:mofa-fm"]
 mofa-settings = ["dep:mofa-settings"]
 mofa-debate = ["dep:mofa-debate"]
 mofa-asr = ["dep:mofa-asr"]
+mofa-ui-generator = ["dep:mofa-ui-generator"]
 
 [dependencies]
 makepad-widgets.workspace = true
@@ -19,6 +20,7 @@ mofa-fm = { path = "../apps/mofa-fm", optional = true }
 mofa-settings = { path = "../apps/mofa-settings", optional = true }
 mofa-debate = { path = "../apps/mofa-debate", optional = true }
 mofa-asr = { path = "../apps/mofa-asr", optional = true }
+mofa-ui-generator = { path = "../apps/mofa-ui-generator", optional = true }
 
 # Audio
 cpal.workspace = true
