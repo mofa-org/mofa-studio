@@ -124,7 +124,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Zhao Daniu"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5
@@ -154,7 +154,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Doubao"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5
@@ -184,7 +184,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Ma Yun"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5
@@ -344,7 +344,7 @@ nodes:
       - processing_time
       - log
     env:
-      PARAFORMER_MODEL_DIR: $HOME/.mofa/models/paraformer-large-mlx
+      PARAFORMER_MODEL_DIR: ~/.mofa/models/paraformer-large-mlx
       MIN_AUDIO_DURATION: "0.5"
       MAX_AUDIO_DURATION: "30.0"
       ASR_MLX_WARMUP: "true"

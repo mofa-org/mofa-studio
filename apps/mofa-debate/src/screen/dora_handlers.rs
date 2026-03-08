@@ -529,38 +529,47 @@ impl MoFaDebateScreen {
         // to confirm the dataflow actually stopped
     }
 
-    /// Load API keys from preferences
-    /// Exports all provider API keys including custom providers
+    /// Load API keys from preferences using least-privilege rules.
+    ///
+    /// Rules:
+    /// - provider must be enabled
+    /// - provider must be on explicit allowlist
+    /// - custom providers are not auto-exported
     pub(super) fn load_api_keys_from_preferences(&self) -> HashMap<String, String> {
+        fn env_name_for_provider(provider_id: &str) -> Option<&'static str> {
+            match provider_id {
+                "openai" => Some("OPENAI_API_KEY"),
+                "deepseek" => Some("DEEPSEEK_API_KEY"),
+                "alibaba_cloud" => Some("ALIBABA_CLOUD_API_KEY"),
+                "nvidia" => Some("NVIDIA_API_KEY"),
+                _ => None,
+            }
+        }
+
         let mut env_vars = HashMap::new();
 
         // Load preferences
         let prefs = Preferences::load();
 
-        // Export API keys for ALL providers (built-in and custom)
-        for provider in &prefs.providers {
-            if let Some(ref api_key) = provider.api_key {
-                if !api_key.is_empty() {
-                    // Map provider ID to standard env var name
-                    let env_var_name = match provider.id.as_str() {
-                        "openai" => "OPENAI_API_KEY".to_string(),
-                        "deepseek" => "DEEPSEEK_API_KEY".to_string(),
-                        "alibaba_cloud" => "ALIBABA_CLOUD_API_KEY".to_string(),
-                        "nvidia" => "NVIDIA_API_KEY".to_string(),
-                        // For custom providers, use uppercase ID + _API_KEY
-                        id => format!("{}_API_KEY", id.to_uppercase().replace('-', "_")),
-                    };
-                    env_vars.insert(env_var_name, api_key.clone());
-                }
-            }
-        }
+        for provider in prefs.providers.iter().filter(|p| p.enabled) {
+            let Some(env_var_name) = env_name_for_provider(provider.id.as_str()) else {
+                continue;
+            };
 
-        // Also export DASHSCOPE_API_KEY for backwards compatibility with alibaba_cloud
-        if let Some(provider) = prefs.get_provider("alibaba_cloud") {
-            if let Some(ref api_key) = provider.api_key {
-                if !api_key.is_empty() {
-                    env_vars.insert("DASHSCOPE_API_KEY".to_string(), api_key.clone());
-                }
+            let Some(api_key) = provider.api_key.as_ref() else {
+                continue;
+            };
+
+            let trimmed = api_key.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            env_vars.insert(env_var_name.to_string(), trimmed.to_string());
+
+            // Backward-compat alias only if Alibaba key is actively exported
+            if provider.id == "alibaba_cloud" {
+                env_vars.insert("DASHSCOPE_API_KEY".to_string(), trimmed.to_string());
             }
         }
 

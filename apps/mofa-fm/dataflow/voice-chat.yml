@@ -133,7 +133,7 @@ nodes:
       - log
     env:
       VOICE_CHARACTER: "dnz"
-      GPT_SOVITS_MODEL_DIR: $HOME/.dora/models/primespeech/gpt-sovits-mlx
+      GPT_SOVITS_MODEL_DIR: ~/.dora/models/primespeech/gpt-sovits-mlx
       TOP_K: "5"
       TEMPERATURE: "1.0"
       RUST_LOG: info
@@ -150,7 +150,7 @@ nodes:
       - log
     env:
       VOICE_CHARACTER: yfc
-      GPT_SOVITS_MODEL_DIR: $HOME/.dora/models/primespeech/gpt-sovits-mlx
+      GPT_SOVITS_MODEL_DIR: ~/.dora/models/primespeech/gpt-sovits-mlx
       TOP_K: "5"
       TEMPERATURE: "1.0"
       RUST_LOG: info
@@ -167,7 +167,7 @@ nodes:
       - log
     env:
       VOICE_CHARACTER: luoxiang
-      GPT_SOVITS_MODEL_DIR: $HOME/.dora/models/primespeech/gpt-sovits-mlx
+      GPT_SOVITS_MODEL_DIR: ~/.dora/models/primespeech/gpt-sovits-mlx
       TOP_K: "5"
       TEMPERATURE: "1.0"
       RUST_LOG: info
@@ -188,7 +188,7 @@ nodes:
   #     TRANSFORMERS_OFFLINE: "1"
   #     HF_HUB_OFFLINE: "1"
   #     VOICE_NAME: "Zhao Daniu"
-  #     PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+  #     PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
   #     TEXT_LANG: zh
   #     PROMPT_LANG: zh
   #     TOP_K: 5
@@ -219,7 +219,7 @@ nodes:
   #     TRANSFORMERS_OFFLINE: "1"
   #     HF_HUB_OFFLINE: "1"
   #     VOICE_NAME: "Doubao"
-  #     PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+  #     PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
   #     TEXT_LANG: zh
   #     PROMPT_LANG: zh
   #     TOP_K: 5
@@ -250,7 +250,7 @@ nodes:
   #     TRANSFORMERS_OFFLINE: "1"
   #     HF_HUB_OFFLINE: "1"
   #     VOICE_NAME: "Ma Yun"
-  #     PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+  #     PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
   #     TEXT_LANG: zh
   #     PROMPT_LANG: zh
   #     TOP_K: 5
@@ -427,7 +427,7 @@ nodes:
       - processing_time
       - log
     env:
-      SENSEVOICE_MODEL_DIR: ${SENSEVOICE_MODEL_DIR:-$HOME/.mofa/models/Fun-ASR-Nano-2512}
+      SENSEVOICE_MODEL_DIR: ${SENSEVOICE_MODEL_DIR:-~/.mofa/models/Fun-ASR-Nano-2512}
       ASR_NANO_LANGUAGE: ${ASR_NANO_LANGUAGE:-auto}
       MIN_AUDIO_DURATION: ${MIN_AUDIO_DURATION:-0.1}
       MAX_AUDIO_DURATION: ${MAX_AUDIO_DURATION:-60.0}

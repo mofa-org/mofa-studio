@@ -645,11 +645,8 @@ pub struct SharedDoraState {
     /// Chat messages from Paraformer ASR engine
     pub chat_paraformer: ChatState,
 
-    /// Chat messages from SenseVoice ASR engine
-    pub chat_sensevoice: ChatState,
-
-    /// Chat messages from StepAudio2 ASR engine
-    pub chat_stepaudio2: ChatState,
+    /// Chat messages from Qwen3-ASR engine
+    pub chat_qwen3: ChatState,
 
     /// Audio chunks (ring buffer, consumed by audio player)
     pub audio: AudioState,
@@ -669,9 +666,9 @@ impl SharedDoraState {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             chat: ChatState::new(500),
+
             chat_paraformer: ChatState::new(500),
-            chat_sensevoice: ChatState::new(500),
-            chat_stepaudio2: ChatState::new(500),
+            chat_qwen3: ChatState::new(500),
             audio: AudioState::new(100),
             logs: DirtyVec::new(1000),
             status: DirtyValue::default(),
@@ -683,9 +680,9 @@ impl SharedDoraState {
     pub fn with_capacities(max_chat: usize, max_audio_chunks: usize, max_logs: usize) -> Arc<Self> {
         Arc::new(Self {
             chat: ChatState::new(max_chat),
+
             chat_paraformer: ChatState::new(max_chat),
-            chat_sensevoice: ChatState::new(max_chat),
-            chat_stepaudio2: ChatState::new(max_chat),
+            chat_qwen3: ChatState::new(max_chat),
             audio: AudioState::new(max_audio_chunks),
             logs: DirtyVec::new(max_logs),
             status: DirtyValue::default(),
@@ -697,8 +694,7 @@ impl SharedDoraState {
     pub fn clear_all(&self) {
         self.chat.clear();
         self.chat_paraformer.clear();
-        self.chat_sensevoice.clear();
-        self.chat_stepaudio2.clear();
+        self.chat_qwen3.clear();
         self.audio.clear();
         self.logs.clear();
         self.status.set(DoraStatus::default());
@@ -733,9 +729,9 @@ impl Default for SharedDoraState {
     fn default() -> Self {
         Self {
             chat: ChatState::new(500),
+
             chat_paraformer: ChatState::new(500),
-            chat_sensevoice: ChatState::new(500),
-            chat_stepaudio2: ChatState::new(500),
+            chat_qwen3: ChatState::new(500),
             audio: AudioState::new(100),
             logs: DirtyVec::new(1000),
             status: DirtyValue::default(),

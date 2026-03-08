@@ -54,9 +54,11 @@ fn test_with_client(client: &reqwest::Client) {
     let body_bytes: Bytes = serde_json::to_vec(&request_body).unwrap().into();
     println!("  Body size: {} bytes", body_bytes.len());
 
+    let token = std::env::var("TEST_API_KEY")
+        .unwrap_or_else(|_| "test-key".to_string());
     let request = client
         .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", "Bearer test-key")
+        .header("Authorization", format\!("Bearer {}", token))
         .header("Content-Type", "application/json")
         .body(body_bytes);
 

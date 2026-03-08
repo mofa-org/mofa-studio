@@ -42,8 +42,7 @@ arrow = { version = "54.2.1", default-features = false }
 libloading = "0.8"
 
 # ASR engines (optional, for dynamic ASR bridges)
-funasr-mlx = { git = "https://github.com/OminiX-ai/OminiX-MLX", branch = "main", optional = true }
-funasr-nano-mlx = { git = "https://github.com/OminiX-ai/OminiX-MLX", branch = "main", optional = true }
+# Removed MLX dependencies for Linux build
 
 # Chrono for timestamp in ASR log output
 chrono = "0.4"
@@ -52,9 +51,7 @@ chrono = "0.4"
 futures = "0.3"
 
 [features]
-default = ["asr-paraformer", "asr-sensevoice"]
-asr-paraformer = ["dep:funasr-mlx"]
-asr-sensevoice = ["dep:funasr-nano-mlx"]
+default = []
 
 [dev-dependencies]
 tokio-test = "0.4"

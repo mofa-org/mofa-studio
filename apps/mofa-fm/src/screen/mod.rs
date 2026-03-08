@@ -25,6 +25,7 @@ use mofa_widgets::{StateChangeListener, TimerControl};
 use mofa_ui::{LedMeterWidgetExt, MicButtonWidgetExt, AecButtonWidgetExt};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 /// Data preloaded in background thread
 #[derive(Default)]
@@ -249,25 +250,21 @@ impl Widget for MoFaFMScreen {
         }
 
         // Debug: Log every event type once
-        static mut LOGGED_TIMER: bool = false;
-        unsafe {
-            if !LOGGED_TIMER {
-                if let Event::Timer(_) = event {
-                    ::log::info!("Received Timer event");
-                    LOGGED_TIMER = true;
-                }
+        static LOGGED_TIMER: AtomicBool = AtomicBool::new(false);
+        if !LOGGED_TIMER.load(Ordering::Relaxed) {
+            if let Event::Timer(_) = event {
+                ::log::info!("Received Timer event");
+                LOGGED_TIMER.store(true, Ordering::Relaxed);
             }
         }
 
         // Handle audio timer for mic level updates, log polling, and buffer status
         if self.audio_timer.is_event(event).is_some() {
             // Debug: log timer firing
-            static mut TIMER_COUNT: u32 = 0;
-            unsafe {
-                TIMER_COUNT += 1;
-                if TIMER_COUNT == 1 {
-                    ::log::info!("Audio timer first fire");
-                }
+            static TIMER_COUNT: AtomicU32 = AtomicU32::new(0);
+            let count = TIMER_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+            if count == 1 {
+                ::log::info!("Audio timer first fire");
             }
             self.update_mic_level(cx);
             // Poll Rust logs (50ms interval is fine for log updates)

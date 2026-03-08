@@ -132,7 +132,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Zhao Daniu"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5
@@ -163,7 +163,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Chen Yifan"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5
@@ -194,7 +194,7 @@ nodes:
       TRANSFORMERS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       VOICE_NAME: "Luo Xiang"
-      PRIMESPEECH_MODEL_DIR: $HOME/.dora/models/primespeech
+      PRIMESPEECH_MODEL_DIR: ~/.dora/models/primespeech
       TEXT_LANG: zh
       PROMPT_LANG: zh
       TOP_K: 5

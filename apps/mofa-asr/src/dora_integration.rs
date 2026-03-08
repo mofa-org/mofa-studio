@@ -16,8 +16,7 @@ use std::thread;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AsrEngineId {
     Paraformer,
-    SenseVoice,
-    StepAudio2,
+    Qwen3Asr,
 }
 
 impl AsrEngineId {
@@ -25,8 +24,7 @@ impl AsrEngineId {
     pub fn node_id(&self) -> &'static str {
         match self {
             AsrEngineId::Paraformer => "mofa-asr-paraformer",
-            AsrEngineId::SenseVoice => "mofa-asr-sensevoice",
-            AsrEngineId::StepAudio2 => "mofa-asr-stepaudio2",
+            AsrEngineId::Qwen3Asr => "mofa-asr-qwen3",
         }
     }
 
@@ -34,8 +32,7 @@ impl AsrEngineId {
     pub fn binary_name(&self) -> &'static str {
         match self {
             AsrEngineId::Paraformer => "dora-funasr-mlx",
-            AsrEngineId::SenseVoice => "dora-funasr-nano-mlx",
-            AsrEngineId::StepAudio2 => "dora-step-audio2-mlx",
+            AsrEngineId::Qwen3Asr => "dora-qwen3-asr-mlx",
         }
     }
 }
@@ -43,20 +40,18 @@ impl AsrEngineId {
 /// Manages ASR engine child processes
 struct AsrProcessManager {
     paraformer: Option<std::process::Child>,
-    sensevoice: Option<std::process::Child>,
-    stepaudio2: Option<std::process::Child>,
+    qwen3_asr: Option<std::process::Child>,
 }
 
 impl AsrProcessManager {
     fn new() -> Self {
         Self {
             paraformer: None,
-            sensevoice: None,
-            stepaudio2: None,
+            qwen3_asr: None,
         }
     }
 
-    fn spawn_engine(&mut self, engine: AsrEngineId) {
+    fn spawn_engine(&mut self, engine: AsrEngineId, env_vars: &std::collections::HashMap<String, String>) {
         // Kill existing process first
         self.kill_engine(engine);
 
@@ -72,12 +67,14 @@ impl AsrProcessManager {
             node_id
         );
 
-        match std::process::Command::new(&bin_path)
-            .arg("--name")
-            .arg(node_id)
-            .stdout(std::process::Stdio::inherit())
-            .stderr(std::process::Stdio::inherit())
-            .spawn()
+        let mut cmd = std::process::Command::new(&bin_path);
+        cmd.arg("--name")
+           .arg(node_id)
+           .envs(env_vars)
+           .stdout(std::process::Stdio::inherit())
+           .stderr(std::process::Stdio::inherit());
+
+        match cmd.spawn()
         {
             Ok(child) => {
                 log::info!(
@@ -87,8 +84,7 @@ impl AsrProcessManager {
                 );
                 match engine {
                     AsrEngineId::Paraformer => self.paraformer = Some(child),
-                    AsrEngineId::SenseVoice => self.sensevoice = Some(child),
-                    AsrEngineId::StepAudio2 => self.stepaudio2 = Some(child),
+                    AsrEngineId::Qwen3Asr => self.qwen3_asr = Some(child),
                 }
             }
             Err(e) => {
@@ -100,8 +96,7 @@ impl AsrProcessManager {
     fn kill_engine(&mut self, engine: AsrEngineId) {
         let child = match engine {
             AsrEngineId::Paraformer => &mut self.paraformer,
-            AsrEngineId::SenseVoice => &mut self.sensevoice,
-            AsrEngineId::StepAudio2 => &mut self.stepaudio2,
+            AsrEngineId::Qwen3Asr => &mut self.qwen3_asr,
         };
         if let Some(ref mut c) = child {
             log::info!("Killing ASR engine {:?} (pid={})", engine, c.id());
@@ -113,8 +108,7 @@ impl AsrProcessManager {
 
     fn kill_all(&mut self) {
         self.kill_engine(AsrEngineId::Paraformer);
-        self.kill_engine(AsrEngineId::SenseVoice);
-        self.kill_engine(AsrEngineId::StepAudio2);
+        self.kill_engine(AsrEngineId::Qwen3Asr);
     }
 
     /// Find binary path - checks node-hub crate target dirs, workspace target dirs, then PATH
@@ -165,7 +159,10 @@ pub enum DoraCommand {
     /// Force stop the dataflow immediately (0s grace period)
     ForceStopDataflow,
     /// Connect an ASR engine (spawn child process)
-    ConnectAsrEngine { engine: AsrEngineId },
+    ConnectAsrEngine { 
+        engine: AsrEngineId,
+        env_vars: std::collections::HashMap<String, String>,
+    },
     /// Disconnect an ASR engine (kill child process)
     DisconnectAsrEngine { engine: AsrEngineId },
     /// Start mic recording
@@ -297,8 +294,8 @@ impl DoraIntegration {
     }
 
     /// Connect an ASR engine (spawn child process)
-    pub fn connect_asr_engine(&self, engine: AsrEngineId) -> bool {
-        self.send_command(DoraCommand::ConnectAsrEngine { engine })
+    pub fn connect_asr_engine(&self, engine: AsrEngineId, env_vars: std::collections::HashMap<String, String>) -> bool {
+        self.send_command(DoraCommand::ConnectAsrEngine { engine, env_vars })
     }
 
     /// Disconnect an ASR engine (kill child process)
@@ -421,9 +418,9 @@ impl DoraIntegration {
                         let _ = event_tx.send(DoraEvent::DataflowStopped);
                     }
 
-                    DoraCommand::ConnectAsrEngine { engine } => {
+                    DoraCommand::ConnectAsrEngine { engine, env_vars } => {
                         log::info!("Connecting ASR engine: {:?}", engine);
-                        asr_processes.spawn_engine(engine);
+                        asr_processes.spawn_engine(engine, &env_vars);
                     }
 
                     DoraCommand::DisconnectAsrEngine { engine } => {

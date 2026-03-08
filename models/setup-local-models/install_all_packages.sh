@@ -104,7 +104,7 @@ fi
 
 # Install Dora CLI
 print_header "Installing Dora CLI"
-DORA_VERSION="0.3.12"
+DORA_VERSION="0.4.1"
 
 # Remove all non-cargo dora installations (except nix symlinks)
 dora_locations=$(type -a dora 2>/dev/null | awk '{print $NF}' || true)

@@ -1,0 +1,33 @@
+[package]
+name = "dora-qwen3-asr-mlx"
+version = "0.1.0"
+edition = "2021"
+authors = ["MoFA Contributors"]
+description = "MLX-based ASR node for Dora using Qwen3-ASR (Apple Silicon optimized, 30+ languages)"
+license = "Apache-2.0"
+
+# Keep this package out of the parent workspace (has external MLX dependencies)
+[workspace]
+
+[dependencies]
+# Dora framework
+dora-node-api = { version = "0.4.1", features = ["tracing"] }
+eyre = "0.6"
+
+# MLX ASR engine (Qwen3-ASR) - local path until published to git
+# To switch to git: qwen3-asr-mlx = { git = "https://github.com/OminiX-ai/OminiX-MLX", branch = "main" }
+qwen3-asr-mlx = { path = "../../../OminiX-MLX/qwen3-asr-mlx" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Utilities
+chrono = "0.4"
+log = "0.4"
+env_logger = "0.11"
+futures = "0.3"
+
+[[bin]]
+name = "dora-qwen3-asr-mlx"
+path = "src/main.rs"

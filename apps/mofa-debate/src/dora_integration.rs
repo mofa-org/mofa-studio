@@ -210,10 +210,9 @@ impl DoraIntegration {
                     } => {
                         log::info!("Starting dataflow: {:?}", dataflow_path);
 
-                        // Set environment variables in both process env and controller
-                        for (key, value) in &env_vars {
+                        // Pass environment variables only to the dataflow controller
+                        for key in env_vars.keys() {
                             log::info!("Setting env var: {}=***", key);
-                            std::env::set_var(key, value);
                         }
 
                         match DataflowController::new(&dataflow_path) {

@@ -8,7 +8,7 @@ description = "Real-time speech monitoring node with Silero VAD for Dora"
 readme = "README.md"
 
 dependencies = [
-    "dora-rs>=0.3.7",
+    "dora-rs>=0.4.1",
     "numpy>=1.21.0,<2.0",  # CRITICAL: Must be 1.x (1.26.4 recommended)
     "scipy>=1.11.0",  # Updated to support newer versions
     "pyarrow>=10.0.0",

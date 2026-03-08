@@ -52,7 +52,7 @@ nodes:
   #     - processing_time
   #     - log
   #   env:
-  #     SENSEVOICE_MODEL_DIR: ${SENSEVOICE_MODEL_DIR:-$HOME/.mofa/models/Fun-ASR-Nano-2512}
+  #     SENSEVOICE_MODEL_DIR: ${SENSEVOICE_MODEL_DIR:-~/.mofa/models/Fun-ASR-Nano-2512}
   #     ASR_NANO_LANGUAGE: ${ASR_NANO_LANGUAGE:-auto}
   #     MIN_AUDIO_DURATION: ${MIN_AUDIO_DURATION:-0.1}
   #     MAX_AUDIO_DURATION: ${MAX_AUDIO_DURATION:-60.0}

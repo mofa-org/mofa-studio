@@ -19,8 +19,8 @@ nodes:
       - segment_complete
       - log
     env:
-      GPT_SOVITS_MODEL_DIR: $HOME/.dora/models/primespeech/gpt-sovits-mlx
-      REF_AUDIO: $HOME/.dora/models/primespeech/moyoyo/ref_audios/doubao_ref_mix_new.wav
+      GPT_SOVITS_MODEL_DIR: ~/.dora/models/primespeech/gpt-sovits-mlx
+      REF_AUDIO: ~/.dora/models/primespeech/moyoyo/ref_audios/doubao_ref_mix_new.wav
       REF_TEXT: "这家resturant的steak很有名，但是vegetable salad的price有点贵"
       SPEED_FACTOR: "1.0"
       TOP_K: "5"

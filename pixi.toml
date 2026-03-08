@@ -42,9 +42,6 @@ llama-cpp-python = "*"
 # =============================================================================
 
 [pypi-dependencies]
-# NumPy (pinned for compatibility with 1.x API)
-numpy = "==1.26.4"
-
 # Transformers ecosystem
 transformers = "==4.45.0"
 huggingface-hub = "==0.34.4"

@@ -59,7 +59,7 @@
 //! }
 //! ```
 
-use makepad_widgets::{Cx, LiveId, Action, live_id, ButtonAction, WidgetActionCast};
+use makepad_widgets::{live_id, Action, ButtonAction, Cx, LiveId, WidgetActionCast};
 
 /// Metadata about a registered app
 #[derive(Clone, Debug)]
@@ -149,7 +149,17 @@ impl PageRouter {
     pub fn new() -> Self {
         Self {
             current_page: Some(PageId::MofaFM), // Default to FM
+          feature/ai-ui-generator
             pages: vec![PageId::MofaFM, PageId::Debate, PageId::Asr, PageId::UIGenerator, PageId::Settings, PageId::App],
+=======
+            pages: vec![
+                PageId::MofaFM,
+                PageId::Debate,
+                PageId::Asr,
+                PageId::Settings,
+                PageId::App,
+            ],
+main
         }
     }
 
@@ -169,7 +179,10 @@ impl PageRouter {
 
     /// Get all pages that should be hidden (all except current)
     pub fn pages_to_hide(&self) -> impl Iterator<Item = PageId> + '_ {
-        self.pages.iter().copied().filter(move |p| Some(*p) != self.current_page)
+        self.pages
+            .iter()
+            .copied()
+            .filter(move |p| Some(*p) != self.current_page)
     }
 
     /// Check if any registered tab was clicked in actions (uses path-based detection)
@@ -181,7 +194,7 @@ impl PageRouter {
                     // Check each page's tab_id against the action path
                     for page in &self.pages {
                         let tab_id = page.tab_live_id();
-                        if wa.path.data.iter().any(|id| *id == tab_id) {
+                        if wa.path.data.contains(&tab_id) {
                             return Some(*page);
                         }
                     }
@@ -197,7 +210,7 @@ impl PageRouter {
 pub fn tab_clicked(actions: &[Action], tab_id: LiveId) -> bool {
     actions.iter().filter_map(|a| a.as_widget_action()).any(|wa| {
         if let ButtonAction::Clicked(_) = wa.cast() {
-            wa.path.data.iter().any(|id| *id == tab_id)
+            wa.path.data.contains(&tab_id)
         } else {
             false
         }
@@ -325,6 +338,7 @@ mod tests {
             name: "Test App",
             id,
             description: "A test app for unit tests",
+            ..Default::default()
         }
     }
 
@@ -334,6 +348,7 @@ mod tests {
             name: "MoFA FM",
             id: "mofa-fm",
             description: "AI-powered audio streaming",
+            ..Default::default()
         };
 
         assert_eq!(info.name, "MoFA FM");
@@ -398,11 +413,13 @@ mod tests {
             name: "First App",
             id: "first",
             description: "The first app",
+            ..Default::default()
         });
         registry.register(AppInfo {
             name: "Second App",
             id: "second",
             description: "The second app",
+            ..Default::default()
         });
 
         // Found

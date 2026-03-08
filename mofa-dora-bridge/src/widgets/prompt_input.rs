@@ -205,10 +205,8 @@ impl PromptInputBridge {
                             // Route to per-engine chat if input matches
                             if input_id.contains("paraformer") {
                                 ss.chat_paraformer.push(msg.clone());
-                            } else if input_id.contains("sensevoice") {
-                                ss.chat_sensevoice.push(msg.clone());
-                            } else if input_id.contains("stepaudio2") {
-                                ss.chat_stepaudio2.push(msg.clone());
+                            } else if input_id.contains("qwen3") {
+                                ss.chat_qwen3.push(msg.clone());
                             }
                             // Always push to combined chat
                             ss.chat.push(msg);
