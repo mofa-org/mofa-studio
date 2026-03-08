@@ -100,6 +100,8 @@ pub enum PageId {
     Debate,
     /// ASR app
     Asr,
+    /// UI Generator app
+    UIGenerator,
     /// Settings page
     Settings,
     /// Generic app page (for demo apps)
@@ -113,6 +115,7 @@ impl PageId {
             PageId::MofaFM => live_id!(mofa_fm_tab),
             PageId::Debate => live_id!(debate_tab),
             PageId::Asr => live_id!(mofa_asr_tab),
+            PageId::UIGenerator => live_id!(ui_generator_tab),
             PageId::Settings => live_id!(settings_tab),
             PageId::App => live_id!(app_tab),
         }
@@ -124,6 +127,7 @@ impl PageId {
             PageId::MofaFM => live_id!(fm_page),
             PageId::Debate => live_id!(debate_page),
             PageId::Asr => live_id!(asr_page),
+            PageId::UIGenerator => live_id!(ui_generator_page),
             PageId::Settings => live_id!(settings_page),
             PageId::App => live_id!(app_page),
         }
@@ -145,6 +149,9 @@ impl PageRouter {
     pub fn new() -> Self {
         Self {
             current_page: Some(PageId::MofaFM), // Default to FM
+          feature/ai-ui-generator
+            pages: vec![PageId::MofaFM, PageId::Debate, PageId::Asr, PageId::UIGenerator, PageId::Settings, PageId::App],
+=======
             pages: vec![
                 PageId::MofaFM,
                 PageId::Debate,
@@ -152,6 +159,7 @@ impl PageRouter {
                 PageId::Settings,
                 PageId::App,
             ],
+main
         }
     }
 

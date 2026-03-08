@@ -42,6 +42,7 @@ live_design! {
     use mofa_settings::screen::SettingsScreen;
     use mofa_debate::screen::design::MoFaDebateScreen;
     use mofa_asr::screen::design::MoFaASRScreen;
+    use mofa_ui_generator::screen::design::MoFaUIGeneratorScreen;
     use crate::widgets::tabs::TabWidget;
     use crate::widgets::tabs::TabBar;
 
@@ -337,6 +338,11 @@ live_design! {
                         }
 
                         asr_page = <MoFaASRScreen> {
+                            width: Fill, height: Fill
+                            visible: false
+                        }
+
+                        ui_generator_page = <MoFaUIGeneratorScreen> {
                             width: Fill, height: Fill
                             visible: false
                         }
