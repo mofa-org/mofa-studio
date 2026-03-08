@@ -8,7 +8,7 @@ description = "Multi-engine ASR node for Dora with Whisper and FunASR support"
 readme = "README.md"
 
 dependencies = [
-    "dora-rs>=0.3.7",
+    "dora-rs>=0.4.1",
     "numpy>=1.21.0,<2.0",  # CRITICAL: Must be 1.x (1.26.4 recommended) for compatibility
     "scipy>=1.11.0,<1.12.0",  # Required by librosa, use 1.11.4 for Python 3.12
     "pyarrow>=10.0.0",

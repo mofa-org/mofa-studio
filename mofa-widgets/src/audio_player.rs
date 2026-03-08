@@ -352,7 +352,7 @@ fn run_audio_thread(
                         s.current_participant_idx = current_participant;
 
                         // Store the most recent output samples, stretching if needed
-                        let samples: Vec<f32> = data.iter().copied().collect();
+                        let samples: Vec<f32> = data.to_vec();
                         if samples.len() >= 512 {
                             s.output_waveform = samples[..512].to_vec();
                         } else if !samples.is_empty() {

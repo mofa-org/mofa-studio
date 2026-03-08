@@ -7,6 +7,7 @@ members = [
     "mofa-ui",
     "apps/*",
 ]
+exclude = ["apps/mofa-asr"]
 
 [workspace.package]
 version = "0.1.0"

@@ -6,7 +6,7 @@ When running `dora stop` on a dataflow with dynamic nodes, the command hangs ind
 
 ## Environment
 
-- dora-rs version: 0.4.0
+- dora-rs version: 0.4.1
 - Platform: macOS (Darwin 24.6.0)
 - Mode: Local (`dora up` + `dora start`)
 
@@ -19,6 +19,7 @@ $ dora stop <uuid>
 ```
 
 Observations:
+
 - Daemon shows "Running" for ~30 seconds, then "Not running"
 - Coordinator remains running
 - `dora stop` never returns
@@ -36,6 +37,7 @@ Observations:
 ```
 
 Two TCP connections between coordinator and daemon:
+
 1. **Connection #1**: Coordinator → Daemon events + Daemon → Coordinator replies
 2. **Connection #2**: Daemon → Coordinator events (AllNodesFinished, etc.)
 
@@ -43,7 +45,7 @@ Two TCP connections between coordinator and daemon:
 
 ### Primary Issue: Heartbeat Timeout False Positive
 
-**Location:** `dora-daemon-0.4.0/src/lib.rs:444-445`
+**Location:** `dora-daemon-0.4.1/src/lib.rs:444-445`
 
 ```rust
 if self.last_coordinator_heartbeat.elapsed() > Duration::from_secs(20) {
@@ -54,7 +56,7 @@ if self.last_coordinator_heartbeat.elapsed() > Duration::from_secs(20) {
 The daemon has a 20-second heartbeat timeout. However, heartbeats can be delayed due to **single-threaded event processing** in the coordinator.rs task:
 
 ```rust
-// dora-daemon-0.4.0/src/coordinator.rs:73-137
+// dora-daemon-0.4.1/src/coordinator.rs:73-137
 loop {
     let event = socket_stream_receive(&mut stream).await;  // 1. Receive
     tx.send(event).await;                                   // 2. Send to daemon
@@ -89,7 +91,7 @@ T+20s+   Coordinator waiting for DataflowFinishedOnDaemon
 
 ### Secondary Issue: No Timeout on tcp_receive
 
-**Location:** `dora-coordinator-0.4.0/src/lib.rs:1235`
+**Location:** `dora-coordinator-0.4.1/src/lib.rs:1235`
 
 ```rust
 let reply_raw = tcp_receive(&mut daemon_connection.stream)
@@ -97,7 +99,7 @@ let reply_raw = tcp_receive(&mut daemon_connection.stream)
     .wrap_err("failed to receive stop reply from daemon")?;
 ```
 
-**Location:** `dora-coordinator-0.4.0/src/tcp_utils.rs:14-23`
+**Location:** `dora-coordinator-0.4.1/src/tcp_utils.rs:14-23`
 
 ```rust
 pub async fn tcp_receive(connection: &mut TcpStream) -> std::io::Result<Vec<u8>> {
@@ -109,7 +111,7 @@ pub async fn tcp_receive(connection: &mut TcpStream) -> std::io::Result<Vec<u8>>
 
 ### Tertiary Issue: Orphaned Reply Senders
 
-**Location:** `dora-coordinator-0.4.0/src/lib.rs:603`
+**Location:** `dora-coordinator-0.4.1/src/lib.rs:603`
 
 ```rust
 dataflow.stop_reply_senders.push(reply_sender);
@@ -126,9 +128,10 @@ ERROR   mofa-audio-player: daemon  failed to receive finished signal
 ERROR   mofa-mic-input: daemon  failed to receive finished signal
 ```
 
-**Location:** `dora-daemon-0.4.0/src/spawn/prepared.rs:110-118`
+**Location:** `dora-daemon-0.4.1/src/spawn/prepared.rs:110-118`
 
 Dynamic nodes (`path: dynamic`) are placeholders waiting for external connection (e.g., MoFA Studio UI). The "failed to receive finished signal" occurs because:
+
 1. No process is spawned for dynamic nodes
 2. The `finished_tx` channel is dropped immediately
 3. `finished_rx.await` returns `Err`
@@ -143,7 +146,7 @@ This is correct behavior - dynamic nodes shouldn't have a process until connecte
 #### 1. Add timeout to tcp_receive
 
 ```rust
-// dora-coordinator-0.4.0/src/lib.rs
+// dora-coordinator-0.4.1/src/lib.rs
 use tokio::time::{timeout, Duration};
 
 let reply_raw = timeout(
@@ -166,6 +169,7 @@ for sender in dataflow.stop_reply_senders.drain(..) {
 #### 3. Fix heartbeat during blocked reply wait
 
 Option A: Process heartbeats in separate task
+
 ```rust
 // Split the coordinator.rs task into two:
 // 1. Receive task: receives events, queues them
@@ -173,6 +177,7 @@ Option A: Process heartbeats in separate task
 ```
 
 Option B: Adaptive heartbeat timeout
+
 ```rust
 // Track when we're waiting for a reply
 if waiting_for_reply {
@@ -185,6 +190,7 @@ if waiting_for_reply {
 #### 1. Use Gossip Protocol for Failure Detection
 
 Replace simple heartbeat with SWIM-style protocol:
+
 - Indirect probing through peers
 - Suspicion mechanism before declaring dead
 - Reduces false positives significantly
@@ -257,18 +263,18 @@ dora stop --grace-duration 30s <uuid>
 
 ## Files Analyzed
 
-| File | Description |
-|------|-------------|
-| `dora-daemon-0.4.0/src/lib.rs` | Daemon main loop, heartbeat check |
-| `dora-daemon-0.4.0/src/coordinator.rs` | Daemon's coordinator connection task |
-| `dora-daemon-0.4.0/src/spawn/prepared.rs` | Node spawning, dynamic node handling |
-| `dora-daemon-0.4.0/src/pending.rs` | Pending node management |
-| `dora-coordinator-0.4.0/src/lib.rs` | Coordinator main loop, stop handling |
-| `dora-coordinator-0.4.0/src/tcp_utils.rs` | TCP send/receive (no timeout) |
+| File                                      | Description                          |
+| ----------------------------------------- | ------------------------------------ |
+| `dora-daemon-0.4.1/src/lib.rs`            | Daemon main loop, heartbeat check    |
+| `dora-daemon-0.4.1/src/coordinator.rs`    | Daemon's coordinator connection task |
+| `dora-daemon-0.4.1/src/spawn/prepared.rs` | Node spawning, dynamic node handling |
+| `dora-daemon-0.4.1/src/pending.rs`        | Pending node management              |
+| `dora-coordinator-0.4.1/src/lib.rs`       | Coordinator main loop, stop handling |
+| `dora-coordinator-0.4.1/src/tcp_utils.rs` | TCP send/receive (no timeout)        |
 
 ## References
 
-- dora-rs source: `~/.cargo/registry/src/index.crates.io-*/dora-*-0.4.0/`
+- dora-rs source: `~/.cargo/registry/src/index.crates.io-*/dora-*-0.4.1/`
 - dora-rs GitHub: https://github.com/dora-rs/dora
 - SWIM Protocol: https://www.cs.cornell.edu/projects/Quicksilver/public_pdfs/SWIM.pdf
 - Phi Accrual Failure Detector: https://www.computer.org/csdl/proceedings-article/srds/2004/22390066/12OmNviEkRx

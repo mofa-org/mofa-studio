@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Common utilities for Dora nodes"
 requires-python = ">=3.8"
 dependencies = [
-    "dora-rs>=0.3.7",
+    "dora-rs>=0.4.1",
     "pyarrow>=10.0.0",
 ]
 

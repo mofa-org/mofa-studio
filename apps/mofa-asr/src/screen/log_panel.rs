@@ -143,8 +143,7 @@ impl MoFaASRScreen {
     pub(super) fn copy_chat_to_clipboard(&mut self, cx: &mut Cx, engine: AsrEngineId) {
         let controller = match engine {
             AsrEngineId::Paraformer => self.paraformer_chat_controller.clone(),
-            AsrEngineId::SenseVoice => self.sensevoice_chat_controller.clone(),
-            AsrEngineId::StepAudio2 => self.stepaudio2_chat_controller.clone(),
+            AsrEngineId::Qwen3Asr => self.qwen3_chat_controller.clone(),
         };
         if let Some(ctrl) = controller {
             let mut guard = ctrl.lock().expect("ChatController mutex poisoned");

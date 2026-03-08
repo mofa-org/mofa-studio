@@ -36,8 +36,12 @@ pub fn get_cli_args() -> &'static Args {
 use mofa_widgets::{MofaApp, AppRegistry, TimerControl, PageRouter, PageId, tab_clicked};
 use mofa_fm::{MoFaFMApp, MoFaFMScreenWidgetRefExt};
 use mofa_debate::{MoFaDebateApp, MoFaDebateScreenWidgetRefExt};
+feature/gpu-monitoring-nvml
 use mofa_asr::{MoFaASRApp, MoFaASRScreenWidgetRefExt};
 use mofa_ui_generator::{MoFaUIGeneratorApp, screen::MoFaUIGeneratorScreenWidgetRefExt};
+=======
+// use mofa_asr::{MoFaASRApp, MoFaASRScreenWidgetRefExt};
+main
 use mofa_settings::MoFaSettingsApp;
 use mofa_settings::data::Preferences;
 use mofa_settings::screen::SettingsScreenWidgetRefExt;
@@ -392,8 +396,12 @@ impl LiveHook for App {
         // Initialize the app registry with all installed apps
         self.app_registry.register(MoFaFMApp::info());
         self.app_registry.register(MoFaDebateApp::info());
+feature/gpu-monitoring-nvml
         self.app_registry.register(MoFaASRApp::info());
         self.app_registry.register(MoFaUIGeneratorApp::info());
+=======
+        // self.app_registry.register(MoFaASRApp::info());
+main
         self.app_registry.register(MoFaSettingsApp::info());
 
         // Initialize page router (defaults to MoFA FM)
@@ -464,8 +472,12 @@ impl LiveRegister for App {
         // (Makepad constraint), but registration uses the standardized trait interface
         <MoFaFMApp as MofaApp>::live_design(cx);
         <MoFaDebateApp as MofaApp>::live_design(cx);
+feature/gpu-monitoring-nvml
         <MoFaASRApp as MofaApp>::live_design(cx);
         <MoFaUIGeneratorApp as MofaApp>::live_design(cx);
+=======
+        // <MoFaASRApp as MofaApp>::live_design(cx);
+main
         <MoFaSettingsApp as MofaApp>::live_design(cx);
 
         // Shell widgets (order matters - tabs before dashboard, apps before dashboard)
@@ -1130,8 +1142,8 @@ impl App {
             .update_dark_mode(cx, dm);
 
         // Apply to MoFA ASR screen
-        self.ui.mo_fa_asrscreen(ids!(body.dashboard_wrapper.dashboard_base.content_area.main_content.content.asr_page))
-            .update_dark_mode(cx, dm);
+        // self.ui.mo_fa_asrscreen(ids!(body.dashboard_wrapper.dashboard_base.content_area.main_content.content.asr_page))
+        //     .update_dark_mode(cx, dm);
 
         // Apply to Settings screen in main content
         self.ui.settings_screen(ids!(body.dashboard_wrapper.dashboard_base.content_area.main_content.content.settings_page))

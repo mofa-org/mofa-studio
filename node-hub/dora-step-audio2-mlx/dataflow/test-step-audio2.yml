@@ -30,7 +30,7 @@ nodes:
       - processing_time
       - log
     env:
-      STEPAUDIO2_MODEL_DIR: ${STEPAUDIO2_MODEL_DIR:-$HOME/.mofa/models/Step-Audio-2-mini}
+      STEPAUDIO2_MODEL_DIR: ${STEPAUDIO2_MODEL_DIR:-~/.mofa/models/Step-Audio-2-mini}
       MIN_AUDIO_DURATION: "0.5"
       MAX_AUDIO_DURATION: "30.0"
       ASR_MLX_WARMUP: "true"

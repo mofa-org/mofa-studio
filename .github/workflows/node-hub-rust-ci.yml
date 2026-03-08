@@ -1,0 +1,52 @@
+name: Node Hub Rust CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'node-hub/**'
+  pull_request:
+    paths:
+      - 'node-hub/**'
+  workflow_dispatch:
+
+jobs:
+  test-node-hub-crates:
+    name: Test node-hub Rust crates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-node-hub-${{ hashFiles('node-hub/**/Cargo.lock') }}
+
+      - name: Run tests for node-hub crates
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for manifest in node-hub/**/Cargo.toml; do
+            found=1
+            echo "Running tests for $manifest"
+            cargo test --manifest-path "$manifest" --all-features
+          done
+          if [ "$found" = 0 ]; then
+            echo "No Cargo.toml files found under node-hub/, skipping."
+          fi
+

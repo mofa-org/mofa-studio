@@ -484,8 +484,8 @@ live_design! {
                         }
                     }
 
-                    // SenseVoice chat panel
-                    sensevoice_section = <RoundedView> {
+                    // Qwen3-ASR chat panel
+                    qwen3_section = <RoundedView> {
                         width: Fill, height: Fill
                         show_bg: true
                         draw_bg: {
@@ -504,13 +504,13 @@ live_design! {
                         }
                         flow: Down
 
-                        sensevoice_header = <PanelHeader> {
+                        qwen3_header = <PanelHeader> {
                             flow: Right
                             spacing: 8
                             align: {y: 0.5}
 
-                            sensevoice_title = <Label> {
-                                text: "SenseVoice"
+                            qwen3_title = <Label> {
+                                text: "Qwen3-ASR"
                                 draw_text: {
                                     instance dark_mode: 0.0
                                     text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
@@ -520,8 +520,8 @@ live_design! {
                                 }
                             }
 
-                            sensevoice_subtitle = <Label> {
-                                text: "(zh/en/ja, ~3x RT)"
+                            qwen3_subtitle = <Label> {
+                                text: "(30+ languages, ~30x RT)"
                                 draw_text: {
                                     instance dark_mode: 0.0
                                     text_style: <FONT_REGULAR>{ font_size: 10.0 }
@@ -533,7 +533,7 @@ live_design! {
 
                             <View> { width: Fill, height: 1 }
 
-                            sensevoice_status = <Label> {
+                            qwen3_status = <Label> {
                                 text: "OFF"
                                 draw_text: {
                                     instance dark_mode: 0.0
@@ -544,7 +544,7 @@ live_design! {
                                 }
                             }
 
-                            sensevoice_toggle_btn = <Button> {
+                            qwen3_toggle_btn = <Button> {
                                 width: Fit, height: Fit
                                 padding: {left: 12, right: 12, top: 4, bottom: 4}
                                 text: "ON"
@@ -567,7 +567,7 @@ live_design! {
                                 }
                             }
 
-                            sensevoice_copy_btn = <View> {
+                            qwen3_copy_btn = <View> {
                                 width: 28, height: 24
                                 margin: {left: 4}
                                 cursor: Hand
@@ -599,7 +599,7 @@ live_design! {
                                 }
                             }
 
-                            sensevoice_maximize_btn = <View> {
+                            qwen3_maximize_btn = <View> {
                                 width: 20, height: 20
                                 margin: {left: 4}
                                 cursor: Hand
@@ -632,160 +632,7 @@ live_design! {
                             }
                         }
 
-                        sensevoice_messages = <Messages> {
-                            width: Fill, height: Fill
-                        }
-                    }
-
-                    // StepAudio2 chat panel
-                    stepaudio2_section = <RoundedView> {
-                        width: Fill, height: Fill
-                        show_bg: true
-                        draw_bg: {
-                            instance dark_mode: 0.0
-                            border_radius: (PANEL_RADIUS)
-                            border_size: 1.0
-                            fn pixel(self) -> vec4 {
-                                let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                sdf.box(0., 0., self.rect_size.x, self.rect_size.y, self.border_radius);
-                                let bg = mix((PANEL_BG), (PANEL_BG_DARK), self.dark_mode);
-                                let border = mix((BORDER), (SLATE_600), self.dark_mode);
-                                sdf.fill(bg);
-                                sdf.stroke(border, self.border_size);
-                                return sdf.result;
-                            }
-                        }
-                        flow: Down
-
-                        stepaudio2_header = <PanelHeader> {
-                            flow: Right
-                            spacing: 8
-                            align: {y: 0.5}
-
-                            stepaudio2_title = <Label> {
-                                text: "StepAudio2"
-                                draw_text: {
-                                    instance dark_mode: 0.0
-                                    text_style: <FONT_SEMIBOLD>{ font_size: 13.0 }
-                                    fn get_color(self) -> vec4 {
-                                        return mix((TEXT_PRIMARY), (TEXT_PRIMARY_DARK), self.dark_mode);
-                                    }
-                                }
-                            }
-
-                            stepaudio2_subtitle = <Label> {
-                                text: "(Whisper+Qwen, multi-lang)"
-                                draw_text: {
-                                    instance dark_mode: 0.0
-                                    text_style: <FONT_REGULAR>{ font_size: 10.0 }
-                                    fn get_color(self) -> vec4 {
-                                        return mix((TEXT_SECONDARY), (TEXT_SECONDARY_DARK), self.dark_mode);
-                                    }
-                                }
-                            }
-
-                            <View> { width: Fill, height: 1 }
-
-                            stepaudio2_status = <Label> {
-                                text: "OFF"
-                                draw_text: {
-                                    instance dark_mode: 0.0
-                                    text_style: <FONT_MEDIUM>{ font_size: 10.0 }
-                                    fn get_color(self) -> vec4 {
-                                        return mix((TEXT_SECONDARY), (TEXT_SECONDARY_DARK), self.dark_mode);
-                                    }
-                                }
-                            }
-
-                            stepaudio2_toggle_btn = <Button> {
-                                width: Fit, height: Fit
-                                padding: {left: 12, right: 12, top: 4, bottom: 4}
-                                text: "ON"
-                                draw_text: {
-                                    text_style: <FONT_SEMIBOLD>{ font_size: 10.0 }
-                                    fn get_color(self) -> vec4 {
-                                        return vec4(1.0, 1.0, 1.0, 1.0);
-                                    }
-                                }
-                                draw_bg: {
-                                    instance dark_mode: 0.0
-                                    border_radius: 4.0
-                                    fn pixel(self) -> vec4 {
-                                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                        sdf.box(0., 0., self.rect_size.x, self.rect_size.y, self.border_radius);
-                                        let bg = mix(vec4(0.133, 0.773, 0.373, 1.0), vec4(0.1, 0.6, 0.3, 1.0), self.dark_mode);
-                                        sdf.fill(bg);
-                                        return sdf.result;
-                                    }
-                                }
-                            }
-
-                            stepaudio2_copy_btn = <View> {
-                                width: 28, height: 24
-                                margin: {left: 4}
-                                cursor: Hand
-                                show_bg: true
-                                draw_bg: {
-                                    instance copied: 0.0
-                                    instance dark_mode: 0.0
-                                    fn pixel(self) -> vec4 {
-                                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                        let c = self.rect_size * 0.5;
-                                        let gray = mix((BORDER), vec4(0.334, 0.371, 0.451, 1.0), self.dark_mode);
-                                        let c1 = mix(vec4(0.231, 0.510, 0.965, 1.0), vec4(0.639, 0.380, 0.957, 1.0), self.dark_mode);
-                                        let c2 = mix(vec4(0.078, 0.722, 0.651, 1.0), vec4(0.133, 0.831, 0.894, 1.0), self.dark_mode);
-                                        let c3 = mix(vec4(0.133, 0.773, 0.373, 1.0), vec4(0.290, 0.949, 0.424, 1.0), self.dark_mode);
-                                        let t = self.copied;
-                                        let bg_color = mix(mix(mix(gray, c1, clamp(t * 3.0, 0.0, 1.0)), c2, clamp((t - 0.33) * 3.0, 0.0, 1.0)), c3, clamp((t - 0.66) * 3.0, 0.0, 1.0));
-                                        sdf.box(0., 0., self.rect_size.x, self.rect_size.y, 4.0);
-                                        sdf.fill(bg_color);
-                                        let icon_base = mix((GRAY_600), vec4(0.580, 0.639, 0.722, 1.0), self.dark_mode);
-                                        let icon_color = mix(icon_base, vec4(1.0, 1.0, 1.0, 1.0), smoothstep(0.0, 0.3, self.copied));
-                                        sdf.box(c.x - 4.0, c.y - 2.0, 8.0, 9.0, 1.0);
-                                        sdf.stroke(icon_color, 1.2);
-                                        sdf.box(c.x - 2.0, c.y - 5.0, 8.0, 9.0, 1.0);
-                                        sdf.fill(bg_color);
-                                        sdf.box(c.x - 2.0, c.y - 5.0, 8.0, 9.0, 1.0);
-                                        sdf.stroke(icon_color, 1.2);
-                                        return sdf.result;
-                                    }
-                                }
-                            }
-
-                            stepaudio2_maximize_btn = <View> {
-                                width: 20, height: 20
-                                margin: {left: 4}
-                                cursor: Hand
-                                show_bg: true
-                                draw_bg: {
-                                    instance dark_mode: 0.0
-                                    instance maximized: 0.0
-                                    fn pixel(self) -> vec4 {
-                                        let sdf = Sdf2d::viewport(self.pos * self.rect_size);
-                                        let color = mix(vec4(0.4, 0.45, 0.5, 1.0), vec4(0.7, 0.75, 0.8, 1.0), self.dark_mode);
-                                        let w = self.rect_size.x;
-                                        let h = self.rect_size.y;
-                                        let t = self.maximized;
-                                        sdf.move_to(w * mix(0.58, 0.58, t), h * mix(0.29, 0.26, t));
-                                        sdf.line_to(w * mix(0.71, 0.58, t), h * mix(0.29, 0.42, t));
-                                        sdf.move_to(w * mix(0.71, 0.58, t), h * mix(0.29, 0.42, t));
-                                        sdf.line_to(w * mix(0.71, 0.74, t), h * mix(0.42, 0.42, t));
-                                        sdf.move_to(w * mix(0.46, 0.83, t), h * mix(0.54, 0.17, t));
-                                        sdf.line_to(w * mix(0.62, 0.58, t), h * mix(0.38, 0.42, t));
-                                        sdf.move_to(w * mix(0.29, 0.26, t), h * mix(0.58, 0.58, t));
-                                        sdf.line_to(w * mix(0.29, 0.42, t), h * mix(0.71, 0.58, t));
-                                        sdf.move_to(w * mix(0.29, 0.42, t), h * mix(0.71, 0.58, t));
-                                        sdf.line_to(w * mix(0.42, 0.42, t), h * mix(0.71, 0.74, t));
-                                        sdf.move_to(w * mix(0.54, 0.17, t), h * mix(0.46, 0.83, t));
-                                        sdf.line_to(w * mix(0.38, 0.42, t), h * mix(0.62, 0.58, t));
-                                        sdf.stroke(color, 1.2);
-                                        return sdf.result;
-                                    }
-                                }
-                            }
-                        }
-
-                        stepaudio2_messages = <Messages> {
+                        qwen3_messages = <Messages> {
                             width: Fill, height: Fill
                         }
                     }
@@ -903,7 +750,7 @@ live_design! {
                                 }
 
                                 model_name = <Label> {
-                                    text: "SenseVoice"
+                                    text: "Paraformer"
                                     draw_text: {
                                         text_style: <FONT_SEMIBOLD>{ font_size: 11.0 }
                                         fn get_color(self) -> vec4 {
@@ -1228,7 +1075,7 @@ live_design! {
                                     spacing: 8
 
                                     paraformer_label = <Label> {
-                                        text: "○ Paraformer (Chinese only, ~60x real-time)"
+                                        text: "● Paraformer (Chinese only, ~60x real-time)"
                                         draw_text: {
                                             instance dark_mode: 0.0
                                             text_style: { font_size: 12.0 }
@@ -1237,51 +1084,6 @@ live_design! {
                                             }
                                         }
                                     }
-
-                                    sensevoice_label = <Label> {
-                                        text: "● SenseVoice (zh/en/ja, ~3x real-time)"
-                                        draw_text: {
-                                            instance dark_mode: 0.0
-                                            text_style: { font_size: 12.0 }
-                                            fn get_color(self) -> vec4 {
-                                                return mix((TEXT_PRIMARY), (TEXT_PRIMARY_DARK), self.dark_mode);
-                                            }
-                                        }
-                                    }
-
-                                    both_label = <Label> {
-                                        text: "○ Both models (compare results)"
-                                        draw_text: {
-                                            instance dark_mode: 0.0
-                                            text_style: { font_size: 12.0 }
-                                            fn get_color(self) -> vec4 {
-                                                return mix((TEXT_PRIMARY), (TEXT_PRIMARY_DARK), self.dark_mode);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Language Section
-                            language_section = <View> {
-                                width: Fill, height: Fit
-                                flow: Down
-                                spacing: 12
-
-                                section_title = <Label> {
-                                    text: "SenseVoice Language"
-                                    draw_text: {
-                                        instance dark_mode: 0.0
-                                        text_style: <FONT_SEMIBOLD>{ font_size: 14.0 }
-                                        fn get_color(self) -> vec4 {
-                                            return mix((TEXT_PRIMARY), (TEXT_PRIMARY_DARK), self.dark_mode);
-                                        }
-                                    }
-                                }
-
-                                language_dropdown = <DropDown> {
-                                    width: 200, height: 32
-                                    labels: ["Auto Detect", "Chinese (zh)", "English (en)", "Japanese (ja)"]
                                 }
                             }
 
