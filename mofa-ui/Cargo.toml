@@ -6,7 +6,7 @@ description = "Shared UI component library for MoFA Studio applications"
 
 [dependencies]
 makepad-widgets.workspace = true
-mofa-dora-bridge = { path = "../mofa-dora-bridge" }
+mofa-dora-bridge = { path = "../mofa-dora-bridge", default-features = false }
 mofa-widgets = { path = "../mofa-widgets" }
 parking_lot.workspace = true
 sysinfo = "0.32"
@@ -16,3 +16,6 @@ cpal.workspace = true
 # Log bridge
 crossbeam-channel.workspace = true
 once_cell.workspace = true
+
+[target.'cfg(any(target_os = "linux", target_os = "windows"))'.dependencies]
+nvml-wrapper = "0.10"

@@ -171,6 +171,88 @@ mod macos_gpu {
     }
 }
 
+// ============================================================================
+// Linux/Windows GPU monitoring using NVML (NVIDIA)
+// ============================================================================
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+mod nvidia_gpu {
+    use nvml_wrapper::Nvml;
+    use std::sync::OnceLock;
+
+    /// Global NVML instance
+    static NVML: OnceLock<Option<Nvml>> = OnceLock::new();
+
+    /// GPU statistics from NVIDIA NVML
+    #[derive(Debug, Default)]
+    pub struct NvidiaGpuStats {
+        pub gpu_utilization: Option<f64>, // 0.0 - 1.0
+        pub vram_used_mb: Option<u64>,
+        pub vram_total_mb: Option<u64>,
+    }
+
+    /// Get or initialize NVML instance
+    fn get_nvml() -> Option<&'static Nvml> {
+        NVML.get_or_init(|| {
+            match Nvml::init() {
+                Ok(nvml) => {
+                    log::info!("NVIDIA NVML initialized successfully");
+                    Some(nvml)
+                }
+                Err(e) => {
+                    log::warn!("Failed to initialize NVIDIA NVML: {}. GPU monitoring disabled.", e);
+                    None
+                }
+            }
+        }).as_ref()
+    }
+
+    /// Query GPU statistics from NVIDIA devices
+    pub fn query_gpu_stats() -> NvidiaGpuStats {
+        let mut stats = NvidiaGpuStats::default();
+
+        if let Some(nvml) = get_nvml() {
+            if let Ok(device_count) = nvml.device_count() {
+                let mut total_util = 0.0;
+                let mut total_used = 0;
+                let mut total_max = 0;
+                let mut valid_gpus = 0;
+
+                for i in 0..device_count {
+                    if let Ok(device) = nvml.device_by_index(i) {
+                        let mut has_data = false;
+                        
+                        // GPU Utilization
+                        if let Ok(utilization) = device.utilization_rates() {
+                            total_util += utilization.gpu as f64 / 100.0;
+                            has_data = true;
+                        }
+
+                        // VRAM Usage
+                        if let Ok(memory) = device.memory_info() {
+                            total_used += memory.used / (1024 * 1024);
+                            total_max += memory.total / (1024 * 1024);
+                            has_data = true;
+                        }
+
+                        if has_data {
+                            valid_gpus += 1;
+                        }
+                    }
+                }
+
+                if valid_gpus > 0 {
+                    stats.gpu_utilization = Some(total_util / valid_gpus as f64);
+                    stats.vram_used_mb = Some(total_used);
+                    stats.vram_total_mb = Some(total_max);
+                }
+            }
+        }
+
+        stats
+    }
+}
+
 /// Start the background system monitor thread if not already running.
 /// This should be called once at app startup.
 pub fn start_system_monitor() {
@@ -200,9 +282,21 @@ pub fn start_system_monitor() {
                     }
                 }
 
-                #[cfg(not(target_os = "macos"))]
+                #[cfg(any(target_os = "linux", target_os = "windows"))]
                 {
-                    log::info!("GPU monitoring not available (NVIDIA support commented out, enable in system_monitor.rs)");
+                    // Test if we can query NVIDIA GPU stats
+                    let test_stats = nvidia_gpu::query_gpu_stats();
+                    if test_stats.gpu_utilization.is_some() || test_stats.vram_total_mb.is_some() {
+                        stats_clone.gpu_available.store(true, Ordering::Relaxed);
+                        log::info!("GPU monitoring enabled (NVIDIA NVML)");
+                    } else {
+                        log::info!("GPU monitoring not available (NVML initialized but no data or no NVIDIA GPU)");
+                    }
+                }
+
+                #[cfg(all(not(target_os = "macos"), not(target_os = "linux"), not(target_os = "windows")))]
+                {
+                    log::info!("GPU monitoring not available on this platform");
                 }
 
                 loop {
@@ -231,6 +325,28 @@ pub fn start_system_monitor() {
                     #[cfg(target_os = "macos")]
                     {
                         let gpu_stats = macos_gpu::query_gpu_stats();
+
+                        // GPU utilization
+                        if let Some(util) = gpu_stats.gpu_utilization {
+                            let gpu_pct = (util * 10000.0) as u32;
+                            stats_clone.gpu_usage.store(gpu_pct, Ordering::Relaxed);
+                        }
+
+                        // VRAM usage
+                        if let (Some(used), Some(total)) = (gpu_stats.vram_used_mb, gpu_stats.vram_total_mb) {
+                            if total > 0 {
+                                let vram_pct = ((used as f64 / total as f64) * 10000.0) as u32;
+                                stats_clone.vram_usage.store(vram_pct, Ordering::Relaxed);
+                            }
+                        }
+                    }
+
+                    // ========================================================
+                    // Linux/Windows NVIDIA GPU monitoring
+                    // ========================================================
+                    #[cfg(any(target_os = "linux", target_os = "windows"))]
+                    {
+                        let gpu_stats = nvidia_gpu::query_gpu_stats();
 
                         // GPU utilization
                         if let Some(util) = gpu_stats.gpu_utilization {
