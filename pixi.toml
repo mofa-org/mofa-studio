@@ -95,10 +95,9 @@ mlx-audio = "*"
 
 [environments]
 # Default environment (CPU-only, cross-platform)
-default = { solve-group = "default" }
 
 # macOS with MLX acceleration (Apple Silicon)
-macos-mlx = { features = ["macos-mlx"], solve-group = "default" }
+macos-mlx = { features = ["macos-mlx"] }
 
 # =============================================================================
 # TASKS
