@@ -16,7 +16,7 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 # Makepad UI framework
-makepad-widgets = { git = "https://github.com/wyeworks/makepad", rev = "53b2e5c84" }
+makepad-widgets = { git = "https://github.com/wyeworks/makepad", rev = "53b2e5c84d44d3d8b774639b7f9ae5f98b4bc664" }
 
 # Audio
 cpal = "0.15"

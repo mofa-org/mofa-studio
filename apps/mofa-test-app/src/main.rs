@@ -3,11 +3,10 @@
 //! This app tests all the extracted widgets from mofa-ui.
 
 use makepad_widgets::*;
-use mofa_ui::{
-    MofaAppData, MofaTheme, ConnectionStatus,
-    ChatMessage, LogLevel, ProviderInfo, RoleConfig,
-};
 use mofa_dora_bridge::SharedDoraState;
+use mofa_ui::{
+    ChatMessage, ConnectionStatus, LogLevel, MofaAppData, MofaTheme, ProviderInfo, RoleConfig,
+};
 
 live_design! {
     use link::theme::*;
@@ -216,7 +215,6 @@ live_design! {
     }
 }
 
-
 #[derive(Live, LiveHook)]
 pub struct App {
     #[live]
@@ -241,7 +239,8 @@ impl LiveRegister for App {
 
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.ui.handle_event(cx, event, &mut Scope::with_data(&mut self.app_data));
+        self.ui
+            .handle_event(cx, event, &mut Scope::with_data(&mut self.app_data));
 
         // Get actions from event
         let actions = match event {
@@ -257,7 +256,11 @@ impl AppMain for App {
         }
 
         // Run all tests
-        if self.ui.button(ids!(content.controls_section.controls_row.run_all_btn)).clicked(actions) {
+        if self
+            .ui
+            .button(ids!(content.controls_section.controls_row.run_all_btn))
+            .clicked(actions)
+        {
             self.run_all_tests(cx);
         }
     }
@@ -301,28 +304,37 @@ impl App {
         // Check audio widgets
         self.test_results.push((
             "Audio widgets registered".to_string(),
-            registry.contains("led_meter") && registry.contains("mic_button") && registry.contains("aec_button"),
+            registry.contains("led_meter")
+                && registry.contains("mic_button")
+                && registry.contains("aec_button"),
             "led_meter, mic_button, aec_button".to_string(),
         ));
 
         // Check chat widgets
         self.test_results.push((
             "Chat widgets registered".to_string(),
-            registry.contains("chat_panel") && registry.contains("chat_input") && registry.contains("log_panel"),
+            registry.contains("chat_panel")
+                && registry.contains("chat_input")
+                && registry.contains("log_panel"),
             "chat_panel, chat_input, log_panel".to_string(),
         ));
 
         // Check config widgets
         self.test_results.push((
             "Config widgets registered".to_string(),
-            registry.contains("role_editor") && registry.contains("dataflow_picker") && registry.contains("provider_selector"),
+            registry.contains("role_editor")
+                && registry.contains("dataflow_picker")
+                && registry.contains("provider_selector"),
             "role_editor, dataflow_picker, provider_selector".to_string(),
         ));
 
         // Check shell components
         self.test_results.push((
             "Shell components registered".to_string(),
-            registry.contains("mofa_shell") && registry.contains("shell_header") && registry.contains("shell_sidebar") && registry.contains("status_bar"),
+            registry.contains("mofa_shell")
+                && registry.contains("shell_header")
+                && registry.contains("shell_sidebar")
+                && registry.contains("status_bar"),
             "mofa_shell, shell_header, shell_sidebar, status_bar".to_string(),
         ));
     }
@@ -400,7 +412,11 @@ impl App {
         // Phase 4 - Config
         let _config = RoleConfig::default();
         let _: mofa_ui::DataflowPickerAction = mofa_ui::DataflowPickerAction::None;
-        let _provider = ProviderInfo { id: "test".to_string(), name: "Test".to_string(), models: vec![] };
+        let _provider = ProviderInfo {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            models: vec![],
+        };
 
         self.test_results.push((
             "Config widget types exported".to_string(),
@@ -416,7 +432,11 @@ impl App {
         let _: mofa_ui::ShellSidebarAction = mofa_ui::ShellSidebarAction::None;
         let _: mofa_ui::StatusBarAction = mofa_ui::StatusBarAction::None;
         let _: ConnectionStatus = ConnectionStatus::Connected;
-        let _item = mofa_ui::SidebarItem { id: "test".to_string(), label: "Test".to_string(), icon_path: None };
+        let _item = mofa_ui::SidebarItem {
+            id: "test".to_string(),
+            label: "Test".to_string(),
+            icon_path: None,
+        };
 
         self.test_results.push((
             "Shell component types exported".to_string(),
@@ -447,16 +467,26 @@ impl App {
 
         results_text = summary + &results_text;
 
-        self.ui.label(ids!(content.results_section.results_text))
+        self.ui
+            .label(ids!(content.results_section.results_text))
             .set_text(cx, &results_text);
 
         // Update status indicator
         let all_passed = fail_count == 0 && pass_count > 0;
-        self.ui.view(ids!(header.status_indicator.status_led)).apply_over(cx, live!{
-            draw_bg: { active: (if all_passed { 1.0 } else { 0.0 }) }
-        });
-        self.ui.label(ids!(header.status_indicator.status_label))
-            .set_text(cx, &format!("Tests: {}/{} passed", pass_count, pass_count + fail_count));
+        self.ui
+            .view(ids!(header.status_indicator.status_led))
+            .apply_over(
+                cx,
+                live! {
+                    draw_bg: { active: (if all_passed { 1.0 } else { 0.0 }) }
+                },
+            );
+        self.ui
+            .label(ids!(header.status_indicator.status_label))
+            .set_text(
+                cx,
+                &format!("Tests: {}/{} passed", pass_count, pass_count + fail_count),
+            );
 
         self.ui.redraw(cx);
     }
@@ -465,40 +495,75 @@ impl App {
         let dark_mode = self.theme.target_value();
 
         // Apply to main views
-        self.ui.view(ids!(body)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.ui.view(ids!(body)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.ui.view(ids!(header)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.ui.view(ids!(header)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.ui.label(ids!(header.title)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.ui.label(ids!(header.title)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.ui.label(ids!(header.status_indicator.status_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.ui
+            .label(ids!(header.status_indicator.status_label))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
         // Apply to sections
-        self.ui.view(ids!(content.controls_section)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.ui.view(ids!(content.results_section)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.ui.view(ids!(content.controls_section)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.ui.view(ids!(content.results_section)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Apply to labels
-        self.ui.label(ids!(content.controls_section.section_title)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.ui.label(ids!(content.results_section.section_title)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.ui.label(ids!(content.results_section.results_text)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.ui
+            .label(ids!(content.controls_section.section_title))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+        self.ui
+            .label(ids!(content.results_section.section_title))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+        self.ui
+            .label(ids!(content.results_section.results_text))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
         self.ui.redraw(cx);
     }

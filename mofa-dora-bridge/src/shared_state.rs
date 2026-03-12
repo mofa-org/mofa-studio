@@ -451,14 +451,16 @@ impl AudioState {
             tracing::info!("🔇 Force mute set (instant audio silencing)");
         }
         // Also set should_clear for backwards compatibility with UI polling
-        self.should_clear.store(true, std::sync::atomic::Ordering::Release);
+        self.should_clear
+            .store(true, std::sync::atomic::Ordering::Release);
         self.clear();
     }
 
     /// Check and reset the clear signal (UI calls this)
     /// Returns true if buffer should be cleared, resets flag
     pub fn take_clear_signal(&self) -> bool {
-        self.should_clear.swap(false, std::sync::atomic::Ordering::AcqRel)
+        self.should_clear
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
     }
 }
 

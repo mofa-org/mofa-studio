@@ -65,11 +65,17 @@ impl AdaptiveEndpointer {
             .map(|v| v != "false" && v != "0")
             .unwrap_or(true);
         let window_size = std::env::var("ADAPTIVE_WINDOW_SIZE")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(10);
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(10);
         let min_threshold_ms = std::env::var("ADAPTIVE_MIN_MS")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(500.0);
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(500.0);
         let max_threshold_ms = std::env::var("ADAPTIVE_MAX_MS")
-            .ok().and_then(|s| s.parse().ok()).unwrap_or(3000.0);
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(3000.0);
 
         if enabled {
             info!(
@@ -91,7 +97,9 @@ impl AdaptiveEndpointer {
 
     /// Called when speech starts — records the gap since last speech end
     fn record_speech_start(&mut self) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
         if let Some(last_end) = self.last_speech_end {
             let gap_ms = last_end.elapsed().as_secs_f64() * 1000.0;
             self.gap_history.push_back(gap_ms);
@@ -130,7 +138,11 @@ impl AdaptiveEndpointer {
             let min_gap = sorted.first().copied().unwrap_or(0.0);
             info!(
                 "Adaptive threshold: {:.0}ms (P75={:.0}ms, max={:.0}ms, min={:.0}ms, window={})",
-                threshold, p75_gap, max_gap, min_gap, self.gap_history.len()
+                threshold,
+                p75_gap,
+                max_gap,
+                min_gap,
+                self.gap_history.len()
             );
             self.last_logged_threshold = threshold;
         }
@@ -184,11 +196,11 @@ impl Default for VadState {
             audio_segment_buffer: Vec::new(),
             sentence_buffer: Vec::new(),
             silence_count: 0,
-            speech_start_threshold: 3,      // Frames of speech to start
-            speech_end_threshold,           // From env or default 10 frames (~100ms)
-            min_segment_size: 4800,         // 0.3s at 16kHz
-            max_segment_size: 160000,       // 10s at 16kHz
-            question_end_silence_ms,        // From env or default 3000ms
+            speech_start_threshold: 3, // Frames of speech to start
+            speech_end_threshold,      // From env or default 10 frames (~100ms)
+            min_segment_size: 4800,    // 0.3s at 16kHz
+            max_segment_size: 160000,  // 10s at 16kHz
+            question_end_silence_ms,   // From env or default 3000ms
             last_speech_end_time: None,
             question_end_sent: false,
             current_question_id: rand::random::<u32>() % 900000 + 100000,
@@ -219,13 +231,14 @@ impl NativeAudioCapture {
         }
 
         unsafe {
-            let library = Library::new(library_path)
-                .map_err(|e| format!("Failed to load library: {}", e))?;
+            let library =
+                Library::new(library_path).map_err(|e| format!("Failed to load library: {}", e))?;
 
             let start_record: unsafe extern "C" fn() = {
-                let sym: libloading::Symbol<unsafe extern "C" fn()> = library
-                    .get(b"startRecord")
-                    .map_err(|e| format!("Failed to get startRecord: {}", e))?;
+                let sym: libloading::Symbol<unsafe extern "C" fn()> =
+                    library
+                        .get(b"startRecord")
+                        .map_err(|e| format!("Failed to get startRecord: {}", e))?;
                 *sym
             };
 
@@ -659,12 +672,22 @@ impl AecInputBridge {
             if let Some(ref mut aec) = aec_capture {
                 aec.start();
             }
-            let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Recording started with AEC (echo cancellation ON)");
+            let _ = Self::send_log(
+                &mut node,
+                &node_id,
+                "INFO",
+                "🎙️ Recording started with AEC (echo cancellation ON)",
+            );
         } else {
             if let Err(e) = cpal_capture.start() {
                 error!("Failed to start CPAL capture: {}", e);
             }
-            let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Recording started without AEC (regular mic)");
+            let _ = Self::send_log(
+                &mut node,
+                &node_id,
+                "INFO",
+                "🎙️ Recording started without AEC (regular mic)",
+            );
         }
         is_recording.store(true, Ordering::Release);
 
@@ -683,7 +706,12 @@ impl AecInputBridge {
 
         // Send initial status
         let _ = Self::send_status(&mut node, "recording");
-        let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Mic recording STARTED (auto-start on connect)");
+        let _ = Self::send_log(
+            &mut node,
+            &node_id,
+            "INFO",
+            "🎙️ Mic recording STARTED (auto-start on connect)",
+        );
 
         // Main event loop
         let poll_interval = Duration::from_millis(10);
@@ -707,12 +735,22 @@ impl AecInputBridge {
                                 if let Some(ref mut aec) = aec_capture {
                                     aec.start();
                                 }
-                                let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Recording STARTED with AEC");
+                                let _ = Self::send_log(
+                                    &mut node,
+                                    &node_id,
+                                    "INFO",
+                                    "🎙️ Recording STARTED with AEC",
+                                );
                             } else {
                                 if let Err(e) = cpal_capture.start() {
                                     error!("Failed to start CPAL: {}", e);
                                 }
-                                let _ = Self::send_log(&mut node, &node_id, "INFO", "🎙️ Recording STARTED without AEC");
+                                let _ = Self::send_log(
+                                    &mut node,
+                                    &node_id,
+                                    "INFO",
+                                    "🎙️ Recording STARTED without AEC",
+                                );
                             }
                             recording_active = true;
                             is_recording.store(true, Ordering::Release);
@@ -735,7 +773,12 @@ impl AecInputBridge {
                                 ss.mic.set_recording(false);
                             }
                             let _ = Self::send_status(&mut node, "stopped");
-                            let _ = Self::send_log(&mut node, &node_id, "INFO", "🔇 Mic recording STOPPED");
+                            let _ = Self::send_log(
+                                &mut node,
+                                &node_id,
+                                "INFO",
+                                "🔇 Mic recording STOPPED",
+                            );
                         }
                     }
                     AecControlCommand::SetAecEnabled(enabled) => {
@@ -763,12 +806,22 @@ impl AecInputBridge {
                                     if let Some(ref mut aec) = aec_capture {
                                         aec.start();
                                     }
-                                    let _ = Self::send_log(&mut node, &node_id, "INFO", "🔄 Switched to AEC capture (echo cancellation ON)");
+                                    let _ = Self::send_log(
+                                        &mut node,
+                                        &node_id,
+                                        "INFO",
+                                        "🔄 Switched to AEC capture (echo cancellation ON)",
+                                    );
                                 } else {
                                     if let Err(e) = cpal_capture.start() {
                                         error!("Failed to start CPAL: {}", e);
                                     }
-                                    let _ = Self::send_log(&mut node, &node_id, "INFO", "🔄 Switched to regular mic (echo cancellation OFF)");
+                                    let _ = Self::send_log(
+                                        &mut node,
+                                        &node_id,
+                                        "INFO",
+                                        "🔄 Switched to regular mic (echo cancellation OFF)",
+                                    );
                                 }
                             }
                         }
@@ -791,7 +844,8 @@ impl AecInputBridge {
                 let mut vad_results: Vec<bool> = Vec::new();
 
                 // Debug: track audio stats periodically
-                static AUDIO_DEBUG_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                static AUDIO_DEBUG_COUNTER: std::sync::atomic::AtomicU64 =
+                    std::sync::atomic::AtomicU64::new(0);
                 let debug_count = AUDIO_DEBUG_COUNTER.fetch_add(1, Ordering::Relaxed);
 
                 for _ in 0..100 {
@@ -832,7 +886,9 @@ impl AecInputBridge {
                     && !vad_state.question_end_sent
                 {
                     let elapsed = vad_state.last_speech_end_time.unwrap().elapsed();
-                    let threshold = vad_state.endpointer.current_threshold_ms(vad_state.question_end_silence_ms);
+                    let threshold = vad_state
+                        .endpointer
+                        .current_threshold_ms(vad_state.question_end_silence_ms);
                     if elapsed.as_millis() as f64 >= threshold {
                         question_ended = true;
                         vad_state.question_end_sent = true;
@@ -866,17 +922,20 @@ impl AecInputBridge {
                         } else {
                             info!(
                                 "Sent full sentence: {} samples, {:.0}ms (question_id={})",
-                                sentence.len(), sentence_duration_ms, old_qid
+                                sentence.len(),
+                                sentence_duration_ms,
+                                old_qid
                             );
-                            let _ = Self::send_log(
-                                &mut node,
-                                &node_id,
-                                "INFO",
-                                &format!(
+                            let _ =
+                                Self::send_log(
+                                    &mut node,
+                                    &node_id,
+                                    "INFO",
+                                    &format!(
                                     "🎵 SENTENCE sent with question_id={} ({} samples, {:.0}ms)",
                                     old_qid, sentence.len(), sentence_duration_ms
                                 ),
-                            );
+                                );
                         }
                     } else {
                         let _ = Self::send_log(
@@ -885,7 +944,8 @@ impl AecInputBridge {
                             "INFO",
                             &format!(
                                 "⏭️ Sentence too short ({} samples), skipping (question_id={})",
-                                vad_state.sentence_buffer.len(), old_qid
+                                vad_state.sentence_buffer.len(),
+                                old_qid
                             ),
                         );
                         vad_state.sentence_buffer.clear();
@@ -949,7 +1009,8 @@ impl AecInputBridge {
 
                             info!(
                                 "Speech started (question_id={}, sentence_buf={} samples)",
-                                vad_state.current_question_id, vad_state.sentence_buffer.len()
+                                vad_state.current_question_id,
+                                vad_state.sentence_buffer.len()
                             );
                         }
                     } else {
@@ -965,7 +1026,9 @@ impl AecInputBridge {
 
                         if vad_state.silence_count >= vad_state.speech_end_threshold {
                             // Speech burst ended — move audio to sentence buffer (don't send yet)
-                            vad_state.sentence_buffer.extend(&vad_state.audio_segment_buffer);
+                            vad_state
+                                .sentence_buffer
+                                .extend(&vad_state.audio_segment_buffer);
                             vad_state.audio_segment_buffer.clear();
                             vad_state.is_speaking = false;
                             vad_state.silence_count = 0;
@@ -976,7 +1039,9 @@ impl AecInputBridge {
                             vad_state.endpointer.record_speech_end();
 
                             let burst_ms = vad_state.sentence_buffer.len() as f64 / 16.0;
-                            let current_threshold = vad_state.endpointer.current_threshold_ms(vad_state.question_end_silence_ms);
+                            let current_threshold = vad_state
+                                .endpointer
+                                .current_threshold_ms(vad_state.question_end_silence_ms);
                             info!(
                                 "Speech burst ended: sentence_total={:.0}ms, adaptive_threshold={:.0}ms (question_id={})",
                                 burst_ms, current_threshold, vad_state.current_question_id
@@ -999,7 +1064,11 @@ impl AecInputBridge {
                                         vad_state.current_question_id, sentence.len(), sentence_duration_ms
                                     ),
                                 );
-                                if let Err(e) = Self::send_audio_segment(&mut node, &sentence, vad_state.current_question_id) {
+                                if let Err(e) = Self::send_audio_segment(
+                                    &mut node,
+                                    &sentence,
+                                    vad_state.current_question_id,
+                                ) {
                                     warn!("Failed to send max-size sentence: {}", e);
                                 }
                                 // Rotate question_id after forced send
@@ -1152,7 +1221,12 @@ impl AecInputBridge {
     }
 
     /// Send log message to dora log output
-    fn send_log(node: &mut DoraNode, node_id: &str, level: &str, message: &str) -> BridgeResult<()> {
+    fn send_log(
+        node: &mut DoraNode,
+        node_id: &str,
+        level: &str,
+        message: &str,
+    ) -> BridgeResult<()> {
         let log_entry = serde_json::json!({
             "level": level,
             "message": message,
@@ -1246,7 +1320,9 @@ impl DoraBridge for AecInputBridge {
                 }
                 BridgeState::Error => {
                     error!("AecInputBridge connection failed");
-                    return Err(BridgeError::ConnectionFailed("Bridge failed to connect".to_string()));
+                    return Err(BridgeError::ConnectionFailed(
+                        "Bridge failed to connect".to_string(),
+                    ));
                 }
                 BridgeState::Connecting => {
                     // Still connecting, keep waiting
@@ -1255,14 +1331,18 @@ impl DoraBridge for AecInputBridge {
                 BridgeState::Disconnected | BridgeState::Disconnecting => {
                     // Worker thread exited without setting state
                     error!("AecInputBridge worker exited unexpectedly");
-                    return Err(BridgeError::ConnectionFailed("Worker thread exited".to_string()));
+                    return Err(BridgeError::ConnectionFailed(
+                        "Worker thread exited".to_string(),
+                    ));
                 }
             }
         }
 
         // Timeout - connection took too long
         error!("AecInputBridge connection timeout after {:?}", max_wait);
-        Err(BridgeError::ConnectionFailed("Connection timeout".to_string()))
+        Err(BridgeError::ConnectionFailed(
+            "Connection timeout".to_string(),
+        ))
     }
 
     fn disconnect(&mut self) -> BridgeResult<()> {
@@ -1291,10 +1371,8 @@ impl DoraBridge for AecInputBridge {
                             "start_recording" => Some(AecControlCommand::StartRecording),
                             "stop_recording" => Some(AecControlCommand::StopRecording),
                             "toggle_aec" | "set_aec_enabled" => {
-                                let enabled = val
-                                    .get("enabled")
-                                    .and_then(|v| v.as_bool())
-                                    .unwrap_or(true);
+                                let enabled =
+                                    val.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
                                 Some(AecControlCommand::SetAecEnabled(enabled))
                             }
                             _ => None,

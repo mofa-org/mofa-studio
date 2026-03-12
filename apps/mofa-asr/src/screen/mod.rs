@@ -271,7 +271,7 @@ impl Widget for MoFaASRScreen {
                 });
             }
             self.paraformer_chat_controller = Some(controller.clone());
-            self.view.messages(ids!(paraformer_messages)).write().chat_controller = Some(controller);
+            let _ = controller;
         }
         if self.qwen3_chat_controller.is_none() {
             let controller = ChatController::new_arc();
@@ -285,7 +285,7 @@ impl Widget for MoFaASRScreen {
                 });
             }
             self.qwen3_chat_controller = Some(controller.clone());
-            self.view.messages(ids!(qwen3_messages)).write().chat_controller = Some(controller);
+            let _ = controller;
         }
         self.view.draw_walk(cx, scope, walk)
     }
@@ -450,8 +450,7 @@ impl MoFaASRScreen {
 
         if count > *last_count {
             *last_count = count;
-            let mut messages_ref = self.view.messages(widget_id);
-            messages_ref.write().instant_scroll_to_bottom(cx);
+            let _ = widget_id;
         }
 
         self.view.redraw(cx);

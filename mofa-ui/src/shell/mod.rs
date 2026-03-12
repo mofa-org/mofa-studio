@@ -45,16 +45,20 @@
 //! }
 //! ```
 
-pub mod layout;
 pub mod header;
+pub mod layout;
 pub mod sidebar;
 pub mod status_bar;
 
 // Re-export main types
-pub use layout::{MofaShell, MofaShellRef, MofaShellWidgetExt, MofaShellAction};
-pub use header::{ShellHeader, ShellHeaderRef, ShellHeaderWidgetExt, ShellHeaderAction};
-pub use sidebar::{ShellSidebar, ShellSidebarRef, ShellSidebarWidgetExt, ShellSidebarAction, SidebarItem};
-pub use status_bar::{StatusBar, StatusBarRef, StatusBarWidgetExt, StatusBarAction, ConnectionStatus};
+pub use header::{ShellHeader, ShellHeaderAction, ShellHeaderRef, ShellHeaderWidgetExt};
+pub use layout::{MofaShell, MofaShellAction, MofaShellRef, MofaShellWidgetExt};
+pub use sidebar::{
+    ShellSidebar, ShellSidebarAction, ShellSidebarRef, ShellSidebarWidgetExt, SidebarItem,
+};
+pub use status_bar::{
+    ConnectionStatus, StatusBar, StatusBarAction, StatusBarRef, StatusBarWidgetExt,
+};
 
 use makepad_widgets::Cx;
 

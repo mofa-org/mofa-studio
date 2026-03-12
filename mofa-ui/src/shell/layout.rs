@@ -171,10 +171,17 @@ impl MofaShell {
         self.left_sidebar_width = width;
         let visible = width > 0.0;
 
-        self.view.view(ids!(main_area.left_sidebar_slot)).set_visible(cx, visible);
-        self.view.view(ids!(main_area.left_sidebar_slot)).apply_over(cx, live!{
-            width: (width)
-        });
+        self.view
+            .view(ids!(main_area.left_sidebar_slot))
+            .set_visible(cx, visible);
+        self.view
+            .view(ids!(main_area.left_sidebar_slot))
+            .apply_over(
+                cx,
+                live! {
+                    width: (width)
+                },
+            );
         self.view.redraw(cx);
     }
 
@@ -183,30 +190,49 @@ impl MofaShell {
         self.right_sidebar_width = width;
         let visible = width > 0.0;
 
-        self.view.view(ids!(main_area.right_sidebar_slot)).set_visible(cx, visible);
-        self.view.view(ids!(main_area.right_sidebar_slot)).apply_over(cx, live!{
-            width: (width)
-        });
+        self.view
+            .view(ids!(main_area.right_sidebar_slot))
+            .set_visible(cx, visible);
+        self.view
+            .view(ids!(main_area.right_sidebar_slot))
+            .apply_over(
+                cx,
+                live! {
+                    width: (width)
+                },
+            );
         self.view.redraw(cx);
     }
 
     /// Show/hide status bar
     pub fn set_status_bar_visible(&mut self, cx: &mut Cx, visible: bool) {
         self.show_status_bar = visible;
-        let height = if visible { self.status_bar_height.max(28.0) } else { 0.0 };
+        let height = if visible {
+            self.status_bar_height.max(28.0)
+        } else {
+            0.0
+        };
 
-        self.view.view(ids!(status_bar_slot)).set_visible(cx, visible);
-        self.view.view(ids!(status_bar_slot)).apply_over(cx, live!{
-            height: (height)
-        });
+        self.view
+            .view(ids!(status_bar_slot))
+            .set_visible(cx, visible);
+        self.view.view(ids!(status_bar_slot)).apply_over(
+            cx,
+            live! {
+                height: (height)
+            },
+        );
         self.view.redraw(cx);
     }
 
     /// Set content padding
     pub fn set_content_padding(&mut self, cx: &mut Cx, padding: f64) {
-        self.view.view(ids!(main_area.content_slot)).apply_over(cx, live!{
-            padding: (padding)
-        });
+        self.view.view(ids!(main_area.content_slot)).apply_over(
+            cx,
+            live! {
+                padding: (padding)
+            },
+        );
         self.view.redraw(cx);
     }
 
@@ -215,22 +241,38 @@ impl MofaShell {
         self.dark_mode = dark_mode;
 
         // Main background
-        self.view.apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Header slot
-        self.view.view(ids!(header_slot)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.view(ids!(header_slot)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Sidebars
-        self.view.view(ids!(main_area.left_sidebar_slot)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(main_area.right_sidebar_slot)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view
+            .view(ids!(main_area.left_sidebar_slot))
+            .apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
+        self.view
+            .view(ids!(main_area.right_sidebar_slot))
+            .apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
 
         self.view.redraw(cx);
     }

@@ -1,20 +1,20 @@
 [package]
 name = "mofa-asr"
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2021"
 
 [lib]
 path = "src/lib.rs"
 
 [dependencies]
-makepad-widgets.workspace = true
+makepad-widgets = { git = "https://github.com/wyeworks/makepad", rev = "53b2e5c84d44d3d8b774639b7f9ae5f98b4bc664" }
 mofa-widgets = { path = "../../mofa-widgets" }
 mofa-dora-bridge = { path = "../../mofa-dora-bridge" }
 mofa-ui = { path = "../../mofa-ui" }
 mofa-settings = { path = "../mofa-settings" }
-parking_lot.workspace = true
-log.workspace = true
-crossbeam-channel.workspace = true
-serde_json.workspace = true
-serde.workspace = true
+parking_lot = "0.12"
+log = "0.4"
+crossbeam-channel = "0.5"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 moly-kit = { git = "https://github.com/moxin-org/moly", branch = "main" }

@@ -1,7 +1,7 @@
 //! Providers Panel - List of AI providers with collapsible custom providers section
 
+use crate::data::{Preferences, Provider, ProviderId};
 use makepad_widgets::*;
-use crate::data::{Provider, ProviderId, Preferences};
 
 live_design! {
     use link::theme::*;
@@ -448,15 +448,21 @@ impl Widget for ProvidersPanel {
         let header_bg = self.view.view(ids!(scroll_view.custom_header));
         match event.hits(cx, header_bg.area()) {
             Hit::FingerHoverIn(_) => {
-                self.view.view(ids!(scroll_view.custom_header)).apply_over(cx, live!{
-                    draw_bg: { hover: 1.0 }
-                });
+                self.view.view(ids!(scroll_view.custom_header)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 1.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             Hit::FingerHoverOut(_) => {
-                self.view.view(ids!(scroll_view.custom_header)).apply_over(cx, live!{
-                    draw_bg: { hover: 0.0 }
-                });
+                self.view.view(ids!(scroll_view.custom_header)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 0.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             _ => {}
@@ -466,15 +472,21 @@ impl Widget for ProvidersPanel {
         let add_button = self.view.view(ids!(add_button));
         match event.hits(cx, add_button.area()) {
             Hit::FingerHoverIn(_) => {
-                self.view.view(ids!(add_button)).apply_over(cx, live!{
-                    draw_bg: { hover: 1.0 }
-                });
+                self.view.view(ids!(add_button)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 1.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             Hit::FingerHoverOut(_) => {
-                self.view.view(ids!(add_button)).apply_over(cx, live!{
-                    draw_bg: { hover: 0.0 }
-                });
+                self.view.view(ids!(add_button)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 0.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             _ => {}
@@ -502,22 +514,30 @@ impl Widget for ProvidersPanel {
             let area = item.area();
             match event.hits(cx, area) {
                 Hit::FingerHoverIn(_) => {
-                    let is_selected = self.selected_provider_id.as_ref() == Some(&self.custom_providers[i].id);
+                    let is_selected =
+                        self.selected_provider_id.as_ref() == Some(&self.custom_providers[i].id);
                     if !is_selected {
                         // Use instance variable for hover effect
-                        self.view.view(*path).apply_over(cx, live!{
-                            draw_bg: { hover: 1.0 }
-                        });
+                        self.view.view(*path).apply_over(
+                            cx,
+                            live! {
+                                draw_bg: { hover: 1.0 }
+                            },
+                        );
                         self.view.redraw(cx);
                     }
                 }
                 Hit::FingerHoverOut(_) => {
-                    let is_selected = self.selected_provider_id.as_ref() == Some(&self.custom_providers[i].id);
+                    let is_selected =
+                        self.selected_provider_id.as_ref() == Some(&self.custom_providers[i].id);
                     if !is_selected {
                         // Reset hover state
-                        self.view.view(*path).apply_over(cx, live!{
-                            draw_bg: { hover: 0.0 }
-                        });
+                        self.view.view(*path).apply_over(
+                            cx,
+                            live! {
+                                draw_bg: { hover: 0.0 }
+                            },
+                        );
                         self.view.redraw(cx);
                     }
                 }
@@ -532,40 +552,80 @@ impl Widget for ProvidersPanel {
         };
 
         // Handle custom header click (expand/collapse) - match sidebar pattern
-        if self.view.view(ids!(scroll_view.custom_header)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(scroll_view.custom_header))
+            .finger_up(actions)
+            .is_some()
+        {
             self.custom_section_expanded = !self.custom_section_expanded;
-            self.view.view(ids!(scroll_view.custom_section)).set_visible(cx, self.custom_section_expanded);
+            self.view
+                .view(ids!(scroll_view.custom_section))
+                .set_visible(cx, self.custom_section_expanded);
 
             // Update text and arrow like sidebar
             if self.custom_section_expanded {
-                self.view.label(ids!(scroll_view.custom_header.header_content.header_label)).set_text(cx, "Show Less");
-                self.view.label(ids!(scroll_view.custom_header.header_content.arrow_label)).set_text(cx, "^");
+                self.view
+                    .label(ids!(scroll_view.custom_header.header_content.header_label))
+                    .set_text(cx, "Show Less");
+                self.view
+                    .label(ids!(scroll_view.custom_header.header_content.arrow_label))
+                    .set_text(cx, "^");
             } else {
-                self.view.label(ids!(scroll_view.custom_header.header_content.header_label)).set_text(cx, "Show More");
-                self.view.label(ids!(scroll_view.custom_header.header_content.arrow_label)).set_text(cx, ">");
+                self.view
+                    .label(ids!(scroll_view.custom_header.header_content.header_label))
+                    .set_text(cx, "Show More");
+                self.view
+                    .label(ids!(scroll_view.custom_header.header_content.arrow_label))
+                    .set_text(cx, ">");
             }
 
             self.view.redraw(cx);
         }
 
         // Handle add button click
-        if self.view.view(ids!(add_button)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(add_button))
+            .finger_up(actions)
+            .is_some()
+        {
             cx.widget_action(uid, &scope.path, ProvidersPanelAction::AddProviderClicked);
         }
 
         // Handle provider item clicks
         let mut new_selection: Option<ProviderId> = None;
 
-        if self.view.view(ids!(scroll_view.list_container.openai_item)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(scroll_view.list_container.openai_item))
+            .finger_up(actions)
+            .is_some()
+        {
             new_selection = Some(ProviderId::from("openai"));
         }
-        if self.view.view(ids!(scroll_view.list_container.deepseek_item)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(scroll_view.list_container.deepseek_item))
+            .finger_up(actions)
+            .is_some()
+        {
             new_selection = Some(ProviderId::from("deepseek"));
         }
-        if self.view.view(ids!(scroll_view.list_container.alibaba_item)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(scroll_view.list_container.alibaba_item))
+            .finger_up(actions)
+            .is_some()
+        {
             new_selection = Some(ProviderId::from("alibaba_cloud"));
         }
-        if self.view.view(ids!(scroll_view.list_container.nvidia_item)).finger_up(actions).is_some() {
+        if self
+            .view
+            .view(ids!(scroll_view.list_container.nvidia_item))
+            .finger_up(actions)
+            .is_some()
+        {
             new_selection = Some(ProviderId::from("nvidia"));
         }
 
@@ -626,9 +686,12 @@ impl ProvidersPanel {
 
     fn apply_item_hover(&mut self, cx: &mut Cx, item_id: &[LiveId], hover: bool) {
         let hover_val = if hover { 1.0 } else { 0.0 };
-        self.view.view(item_id).apply_over(cx, live!{
-            draw_bg: { hover: (hover_val) }
-        });
+        self.view.view(item_id).apply_over(
+            cx,
+            live! {
+                draw_bg: { hover: (hover_val) }
+            },
+        );
         self.view.redraw(cx);
     }
 
@@ -654,9 +717,12 @@ impl ProvidersPanel {
         };
 
         for item_id in &items {
-            self.view.view(item_id.clone()).apply_over(cx, live!{
-                draw_bg: { color: (normal_color) }
-            });
+            self.view.view(item_id.clone()).apply_over(
+                cx,
+                live! {
+                    draw_bg: { color: (normal_color) }
+                },
+            );
         }
 
         // Reset all custom provider items to unselected (use instance variables)
@@ -674,41 +740,67 @@ impl ProvidersPanel {
         ];
 
         for path in &custom_items {
-            self.view.view(*path).apply_over(cx, live!{
-                draw_bg: { selected: 0.0, hover: 0.0 }
-            });
+            self.view.view(*path).apply_over(
+                cx,
+                live! {
+                    draw_bg: { selected: 0.0, hover: 0.0 }
+                },
+            );
         }
 
         // Apply selected color to the selected item
         let selected = provider_id.as_str();
         match selected {
             "openai" => {
-                self.view.view(ids!(scroll_view.list_container.openai_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
-                });
+                self.view
+                    .view(ids!(scroll_view.list_container.openai_item))
+                    .apply_over(
+                        cx,
+                        live! {
+                            draw_bg: { color: (selected_color) }
+                        },
+                    );
             }
             "deepseek" => {
-                self.view.view(ids!(scroll_view.list_container.deepseek_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
-                });
+                self.view
+                    .view(ids!(scroll_view.list_container.deepseek_item))
+                    .apply_over(
+                        cx,
+                        live! {
+                            draw_bg: { color: (selected_color) }
+                        },
+                    );
             }
             "alibaba_cloud" => {
-                self.view.view(ids!(scroll_view.list_container.alibaba_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
-                });
+                self.view
+                    .view(ids!(scroll_view.list_container.alibaba_item))
+                    .apply_over(
+                        cx,
+                        live! {
+                            draw_bg: { color: (selected_color) }
+                        },
+                    );
             }
             "nvidia" => {
-                self.view.view(ids!(scroll_view.list_container.nvidia_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
-                });
+                self.view
+                    .view(ids!(scroll_view.list_container.nvidia_item))
+                    .apply_over(
+                        cx,
+                        live! {
+                            draw_bg: { color: (selected_color) }
+                        },
+                    );
             }
             _ => {
                 // Check if it's a custom provider - use instance variable for selected
                 for (i, provider) in self.custom_providers.iter().enumerate() {
                     if provider.id == *provider_id && i < custom_items.len() {
-                        self.view.view(custom_items[i]).apply_over(cx, live!{
-                            draw_bg: { selected: 1.0 }
-                        });
+                        self.view.view(custom_items[i]).apply_over(
+                            cx,
+                            live! {
+                                draw_bg: { selected: 1.0 }
+                            },
+                        );
                         break;
                     }
                 }
@@ -723,7 +815,8 @@ impl ProvidersPanel {
 impl ProvidersPanelRef {
     /// Get the currently selected provider ID
     pub fn selected_provider_id(&self) -> Option<ProviderId> {
-        self.borrow().and_then(|inner| inner.selected_provider_id.clone())
+        self.borrow()
+            .and_then(|inner| inner.selected_provider_id.clone())
     }
 
     /// Set the selected provider
@@ -756,14 +849,20 @@ impl ProvidersPanelRef {
             let is_dark = inner.dark_mode;
 
             // Panel background
-            inner.view.apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-            });
+            inner.view.apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
 
             // Header label
-            inner.view.label(ids!(header.header_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner.view.label(ids!(header.header_label)).apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
             // Color constants
             let dark_normal = vec4(0.12, 0.16, 0.23, 1.0);
@@ -777,76 +876,169 @@ impl ProvidersPanelRef {
 
             // Update built-in provider items
             let items = [
-                ("openai", ids!(scroll_view.list_container.openai_item), ids!(scroll_view.list_container.openai_item.openai_label)),
-                ("deepseek", ids!(scroll_view.list_container.deepseek_item), ids!(scroll_view.list_container.deepseek_item.deepseek_label)),
-                ("alibaba_cloud", ids!(scroll_view.list_container.alibaba_item), ids!(scroll_view.list_container.alibaba_item.alibaba_label)),
-                ("nvidia", ids!(scroll_view.list_container.nvidia_item), ids!(scroll_view.list_container.nvidia_item.nvidia_label)),
+                (
+                    "openai",
+                    ids!(scroll_view.list_container.openai_item),
+                    ids!(scroll_view.list_container.openai_item.openai_label),
+                ),
+                (
+                    "deepseek",
+                    ids!(scroll_view.list_container.deepseek_item),
+                    ids!(scroll_view.list_container.deepseek_item.deepseek_label),
+                ),
+                (
+                    "alibaba_cloud",
+                    ids!(scroll_view.list_container.alibaba_item),
+                    ids!(scroll_view.list_container.alibaba_item.alibaba_label),
+                ),
+                (
+                    "nvidia",
+                    ids!(scroll_view.list_container.nvidia_item),
+                    ids!(scroll_view.list_container.nvidia_item.nvidia_label),
+                ),
             ];
 
             for (provider_name, item_path, label_path) in items {
                 let is_selected = selected == Some(provider_name);
                 let bg_color = if is_selected {
-                    if is_dark { dark_selected } else { light_selected }
+                    if is_dark {
+                        dark_selected
+                    } else {
+                        light_selected
+                    }
                 } else {
-                    if is_dark { dark_normal } else { light_normal }
+                    if is_dark {
+                        dark_normal
+                    } else {
+                        light_normal
+                    }
                 };
                 let text_color = if is_dark { dark_text } else { light_text };
 
-                inner.view.view(item_path).apply_over(cx, live!{ draw_bg: { color: (bg_color) } });
-                inner.view.label(label_path).apply_over(cx, live!{ draw_text: { color: (text_color) } });
+                inner
+                    .view
+                    .view(item_path)
+                    .apply_over(cx, live! { draw_bg: { color: (bg_color) } });
+                inner
+                    .view
+                    .label(label_path)
+                    .apply_over(cx, live! { draw_text: { color: (text_color) } });
             }
 
             // Custom header - matching sidebar style
-            inner.view.view(ids!(scroll_view.custom_header)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(scroll_view.custom_header.header_content.header_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(scroll_view.custom_header.header_content.arrow_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner.view.view(ids!(scroll_view.custom_header)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
+            inner
+                .view
+                .label(ids!(scroll_view.custom_header.header_content.header_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
+            inner
+                .view
+                .label(ids!(scroll_view.custom_header.header_content.arrow_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
 
             // Custom provider items (static, like sidebar) - use instance variables
             let custom_item_paths = [
-                (ids!(scroll_view.custom_section.custom_provider_1), ids!(scroll_view.custom_section.custom_provider_1.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_2), ids!(scroll_view.custom_section.custom_provider_2.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_3), ids!(scroll_view.custom_section.custom_provider_3.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_4), ids!(scroll_view.custom_section.custom_provider_4.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_5), ids!(scroll_view.custom_section.custom_provider_5.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_6), ids!(scroll_view.custom_section.custom_provider_6.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_7), ids!(scroll_view.custom_section.custom_provider_7.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_8), ids!(scroll_view.custom_section.custom_provider_8.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_9), ids!(scroll_view.custom_section.custom_provider_9.custom_label)),
-                (ids!(scroll_view.custom_section.custom_provider_10), ids!(scroll_view.custom_section.custom_provider_10.custom_label)),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_1),
+                    ids!(scroll_view.custom_section.custom_provider_1.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_2),
+                    ids!(scroll_view.custom_section.custom_provider_2.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_3),
+                    ids!(scroll_view.custom_section.custom_provider_3.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_4),
+                    ids!(scroll_view.custom_section.custom_provider_4.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_5),
+                    ids!(scroll_view.custom_section.custom_provider_5.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_6),
+                    ids!(scroll_view.custom_section.custom_provider_6.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_7),
+                    ids!(scroll_view.custom_section.custom_provider_7.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_8),
+                    ids!(scroll_view.custom_section.custom_provider_8.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_9),
+                    ids!(scroll_view.custom_section.custom_provider_9.custom_label),
+                ),
+                (
+                    ids!(scroll_view.custom_section.custom_provider_10),
+                    ids!(scroll_view.custom_section.custom_provider_10.custom_label),
+                ),
             ];
 
             let custom_text_color = if is_dark { dark_text } else { light_text };
 
             for (item_path, label_path) in custom_item_paths {
-                inner.view.view(item_path).apply_over(cx, live!{
-                    draw_bg: { dark_mode: (dark_mode) }
-                });
-                inner.view.label(label_path).apply_over(cx, live!{
-                    draw_text: { color: (custom_text_color) }
-                });
+                inner.view.view(item_path).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { dark_mode: (dark_mode) }
+                    },
+                );
+                inner.view.label(label_path).apply_over(
+                    cx,
+                    live! {
+                        draw_text: { color: (custom_text_color) }
+                    },
+                );
             }
 
             // Add divider
-            inner.view.view(ids!(add_divider)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-            });
+            inner.view.view(ids!(add_divider)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
 
             // Add button
-            inner.view.view(ids!(add_button)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(add_button.add_icon)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(add_button.add_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner.view.view(ids!(add_button)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
+            inner.view.label(ids!(add_button.add_icon)).apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+            inner.view.label(ids!(add_button.add_label)).apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
             inner.view.redraw(cx);
         }
@@ -859,7 +1051,8 @@ impl ProvidersPanelRef {
                 let prefs = Preferences::load();
 
                 // Filter to only custom providers
-                inner.custom_providers = prefs.providers
+                inner.custom_providers = prefs
+                    .providers
                     .into_iter()
                     .filter(|p| p.is_custom)
                     .collect();
@@ -869,20 +1062,53 @@ impl ProvidersPanelRef {
 
                 // Show/hide custom header based on whether we have custom providers
                 let has_custom = count > 0;
-                inner.view.view(ids!(scroll_view.custom_header)).set_visible(cx, has_custom);
+                inner
+                    .view
+                    .view(ids!(scroll_view.custom_header))
+                    .set_visible(cx, has_custom);
 
                 // Configure static custom provider items (show/hide and set text)
                 let item_paths = [
-                    (ids!(scroll_view.custom_section.custom_provider_1), ids!(scroll_view.custom_section.custom_provider_1.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_2), ids!(scroll_view.custom_section.custom_provider_2.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_3), ids!(scroll_view.custom_section.custom_provider_3.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_4), ids!(scroll_view.custom_section.custom_provider_4.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_5), ids!(scroll_view.custom_section.custom_provider_5.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_6), ids!(scroll_view.custom_section.custom_provider_6.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_7), ids!(scroll_view.custom_section.custom_provider_7.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_8), ids!(scroll_view.custom_section.custom_provider_8.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_9), ids!(scroll_view.custom_section.custom_provider_9.custom_label)),
-                    (ids!(scroll_view.custom_section.custom_provider_10), ids!(scroll_view.custom_section.custom_provider_10.custom_label)),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_1),
+                        ids!(scroll_view.custom_section.custom_provider_1.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_2),
+                        ids!(scroll_view.custom_section.custom_provider_2.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_3),
+                        ids!(scroll_view.custom_section.custom_provider_3.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_4),
+                        ids!(scroll_view.custom_section.custom_provider_4.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_5),
+                        ids!(scroll_view.custom_section.custom_provider_5.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_6),
+                        ids!(scroll_view.custom_section.custom_provider_6.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_7),
+                        ids!(scroll_view.custom_section.custom_provider_7.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_8),
+                        ids!(scroll_view.custom_section.custom_provider_8.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_9),
+                        ids!(scroll_view.custom_section.custom_provider_9.custom_label),
+                    ),
+                    (
+                        ids!(scroll_view.custom_section.custom_provider_10),
+                        ids!(scroll_view.custom_section.custom_provider_10.custom_label),
+                    ),
                 ];
 
                 for (i, (item_path, label_path)) in item_paths.iter().enumerate() {
@@ -890,7 +1116,10 @@ impl ProvidersPanelRef {
                     if i < count {
                         // Show and configure this item
                         item.set_visible(cx, true);
-                        inner.view.label(*label_path).set_text(cx, &inner.custom_providers[i].name);
+                        inner
+                            .view
+                            .label(*label_path)
+                            .set_text(cx, &inner.custom_providers[i].name);
                     } else {
                         // Hide unused items
                         item.set_visible(cx, false);
@@ -899,15 +1128,27 @@ impl ProvidersPanelRef {
 
                 // If there are custom providers and section is expanded, show it
                 if has_custom && inner.custom_section_expanded {
-                    inner.view.view(ids!(scroll_view.custom_section)).set_visible(cx, true);
+                    inner
+                        .view
+                        .view(ids!(scroll_view.custom_section))
+                        .set_visible(cx, true);
                 }
 
                 // Auto-expand if there are custom providers
                 if has_custom && !inner.custom_section_expanded {
                     inner.custom_section_expanded = true;
-                    inner.view.view(ids!(scroll_view.custom_section)).set_visible(cx, true);
-                    inner.view.label(ids!(scroll_view.custom_header.header_content.header_label)).set_text(cx, "Show Less");
-                    inner.view.label(ids!(scroll_view.custom_header.header_content.arrow_label)).set_text(cx, "^");
+                    inner
+                        .view
+                        .view(ids!(scroll_view.custom_section))
+                        .set_visible(cx, true);
+                    inner
+                        .view
+                        .label(ids!(scroll_view.custom_header.header_content.header_label))
+                        .set_text(cx, "Show Less");
+                    inner
+                        .view
+                        .label(ids!(scroll_view.custom_header.header_content.arrow_label))
+                        .set_text(cx, "^");
                 }
 
                 true

@@ -547,3 +547,106 @@ impl Default for DoraIntegration {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+
+    fn wait_for_stopped_event(integration: &DoraIntegration, timeout: Duration) -> bool {
+        let start = Instant::now();
+        while start.elapsed() < timeout {
+            if integration
+                .poll_events()
+                .into_iter()
+                .any(|event| matches!(event, DoraEvent::DataflowStopped))
+            {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        false
+    }
+
+    #[test]
+    fn test_asr_engine_id_node_mappings() {
+        assert_eq!(AsrEngineId::Paraformer.node_id(), "mofa-asr-paraformer");
+        assert_eq!(AsrEngineId::Qwen3Asr.node_id(), "mofa-asr-qwen3");
+    }
+
+    #[test]
+    fn test_asr_engine_id_binary_mappings() {
+        assert_eq!(AsrEngineId::Paraformer.binary_name(), "dora-funasr-mlx");
+        assert_eq!(AsrEngineId::Qwen3Asr.binary_name(), "dora-qwen3-asr-mlx");
+    }
+
+    #[test]
+    fn test_find_binary_falls_back_to_name() {
+        let unique_name = "dora-binary-that-should-not-exist-for-tests";
+        let resolved = AsrProcessManager::find_binary(unique_name);
+        assert_eq!(resolved, PathBuf::from(unique_name));
+    }
+
+    #[test]
+    fn test_integration_starts_not_running() {
+        let integration = DoraIntegration::new();
+        assert!(!integration.is_running());
+        assert!(integration.poll_events().is_empty());
+    }
+
+    #[test]
+    fn test_stop_dataflow_emits_stopped_event() {
+        let integration = DoraIntegration::new();
+        assert!(integration.stop_dataflow());
+        assert!(wait_for_stopped_event(&integration, Duration::from_secs(2)));
+    }
+
+    #[test]
+    fn test_force_stop_dataflow_emits_stopped_event() {
+        let integration = DoraIntegration::new();
+        assert!(integration.force_stop_dataflow());
+        assert!(wait_for_stopped_event(&integration, Duration::from_secs(2)));
+    }
+
+    #[test]
+    fn test_recording_and_aec_commands_are_accepted() {
+        let integration = DoraIntegration::new();
+        assert!(integration.start_recording());
+        assert!(integration.stop_recording());
+        assert!(integration.set_aec_enabled(true));
+        assert!(integration.set_aec_enabled(false));
+    }
+
+    #[test]
+    fn test_connect_disconnect_engine_commands_are_accepted() {
+        let integration = DoraIntegration::new();
+        assert!(integration.connect_asr_engine(AsrEngineId::Paraformer, HashMap::new()));
+        assert!(integration.disconnect_asr_engine(AsrEngineId::Paraformer));
+        assert!(integration.connect_asr_engine(AsrEngineId::Qwen3Asr, HashMap::new()));
+        assert!(integration.disconnect_asr_engine(AsrEngineId::Qwen3Asr));
+    }
+
+    #[test]
+    fn test_poll_events_drains_queue() {
+        let integration = DoraIntegration::new();
+        assert!(integration.stop_dataflow());
+
+        let start = Instant::now();
+        let mut first_batch = Vec::new();
+        while start.elapsed() < Duration::from_secs(2) {
+            first_batch = integration.poll_events();
+            if !first_batch.is_empty() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+
+        assert!(
+            first_batch
+                .iter()
+                .any(|event| matches!(event, DoraEvent::DataflowStopped))
+        );
+        assert!(integration.poll_events().is_empty());
+    }
+}

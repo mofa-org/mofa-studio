@@ -93,51 +93,88 @@
 //! - **Phase 5**: Shell components
 //! - **Phase 6**: Validation with new app
 
-pub mod registry;
 pub mod app_data;
+pub mod audio;
+pub mod log_bridge;
+pub mod registry;
+pub mod shell;
+pub mod system_monitor;
 pub mod theme;
 pub mod traits;
 pub mod widgets;
-pub mod shell;
-pub mod system_monitor;
-pub mod audio;
-pub mod log_bridge;
 
 // Re-export main types for convenience
-pub use registry::{MofaWidgetRegistry, MofaWidgetDef, WidgetCategory, WidgetSize};
-pub use app_data::{MofaAppData, AppConfig};
+pub use app_data::{AppConfig, MofaAppData};
+pub use registry::{MofaWidgetDef, MofaWidgetRegistry, WidgetCategory, WidgetSize};
 pub use theme::{MofaTheme, ThemeColor, ThemeListener, THEME_TRANSITION_DURATION};
-pub use traits::{MofaWidget, Themeable, DoraConnected, Maximizable, Clearable, Animated, Focusable};
+pub use traits::{
+    Animated, Clearable, DoraConnected, Focusable, Maximizable, MofaWidget, Themeable,
+};
 
 // Re-export shared infrastructure
-pub use audio::{AudioManager, AudioDeviceInfo, MicLevelState};
-pub use log_bridge::{LogMessage, init as log_bridge_init, poll_logs, receiver as log_receiver};
+pub use audio::{AudioDeviceInfo, AudioManager, MicLevelState};
+pub use log_bridge::{init as log_bridge_init, poll_logs, receiver as log_receiver, LogMessage};
 
 // Re-export widgets and their WidgetExt traits
 pub use widgets::{
-    // Audio widgets (Phase 2)
-    LedMeter, LedMeterRef, LedMeterWidgetExt, LedColors,
-    MicButton, MicButtonRef, MicButtonWidgetExt, MicButtonAction,
-    AecButton, AecButtonRef, AecButtonWidgetExt, AecButtonAction,
+    AecButton,
+    AecButtonAction,
+    AecButtonRef,
+    AecButtonWidgetExt,
+    ChatInput,
+    ChatInputAction,
+    ChatInputRef,
+    ChatInputWidgetExt,
+    ChatMessage,
     // Chat widgets (Phase 3)
-    ChatPanel, ChatPanelRef, ChatPanelWidgetExt, ChatPanelAction, ChatMessage,
-    ChatInput, ChatInputRef, ChatInputWidgetExt, ChatInputAction,
-    MofaLogPanel, MofaLogPanelRef, MofaLogPanelWidgetExt, LogPanelAction, LogLevel, LogNode,
-    // Config widgets (Phase 4)
-    RoleEditor, RoleEditorRef, RoleEditorWidgetExt, RoleEditorAction, RoleConfig,
-    DataflowPicker, DataflowPickerRef, DataflowPickerWidgetExt, DataflowPickerAction,
-    ProviderSelector, ProviderSelectorRef, ProviderSelectorWidgetExt, ProviderSelectorAction, ProviderInfo,
+    ChatPanel,
+    ChatPanelAction,
+    ChatPanelRef,
+    ChatPanelWidgetExt,
+    ConnectionStatus,
+    DataflowPicker,
+    DataflowPickerAction,
+    DataflowPickerRef,
+    DataflowPickerWidgetExt,
+    LedColors,
+    // Audio widgets (Phase 2)
+    LedMeter,
+    LedMeterRef,
+    LedMeterWidgetExt,
+    LogLevel,
+    LogNode,
+    LogPanelAction,
+    MicButton,
+    MicButtonAction,
+    MicButtonRef,
+    MicButtonWidgetExt,
     // Hero widgets (Phase 5)
-    MofaHero, MofaHeroRef, MofaHeroWidgetExt, MofaHeroAction, ConnectionStatus,
+    MofaHero,
+    MofaHeroAction,
+    MofaHeroRef,
+    MofaHeroWidgetExt,
+    MofaLogPanel,
+    MofaLogPanelRef,
+    MofaLogPanelWidgetExt,
+    ProviderInfo,
+    ProviderSelector,
+    ProviderSelectorAction,
+    ProviderSelectorRef,
+    ProviderSelectorWidgetExt,
+    RoleConfig,
+    // Config widgets (Phase 4)
+    RoleEditor,
+    RoleEditorAction,
+    RoleEditorRef,
+    RoleEditorWidgetExt,
 };
 
 // Re-export shell components (Phase 5)
 pub use shell::{
-    MofaShell, MofaShellRef, MofaShellWidgetExt, MofaShellAction,
-    ShellHeader, ShellHeaderRef, ShellHeaderWidgetExt, ShellHeaderAction,
-    ShellSidebar, ShellSidebarRef, ShellSidebarWidgetExt, ShellSidebarAction,
-    StatusBar, StatusBarRef, StatusBarWidgetExt, StatusBarAction,
-    SidebarItem,
+    MofaShell, MofaShellAction, MofaShellRef, MofaShellWidgetExt, ShellHeader, ShellHeaderAction,
+    ShellHeaderRef, ShellHeaderWidgetExt, ShellSidebar, ShellSidebarAction, ShellSidebarRef,
+    ShellSidebarWidgetExt, SidebarItem, StatusBar, StatusBarAction, StatusBarRef,
+    StatusBarWidgetExt,
 };
 
 use makepad_widgets::Cx;
@@ -186,62 +223,66 @@ pub fn create_default_registry() -> MofaWidgetRegistry {
     // Register audio widgets (Phase 2)
     registry.register(
         MofaWidgetDef::new("led_meter", "LED Meter", WidgetCategory::Audio)
-            .description("5-LED horizontal level meter for audio visualization")
+            .description("5-LED horizontal level meter for audio visualization"),
     );
     registry.register(
         MofaWidgetDef::new("mic_button", "Mic Button", WidgetCategory::Audio)
-            .description("Microphone toggle button with on/off icons")
+            .description("Microphone toggle button with on/off icons"),
     );
     registry.register(
         MofaWidgetDef::new("aec_button", "AEC Button", WidgetCategory::Audio)
             .requires_dora(true)
-            .description("AEC toggle with animated speaking indicator")
+            .description("AEC toggle with animated speaking indicator"),
     );
 
     // Register chat widgets (Phase 3)
     registry.register(
         MofaWidgetDef::new("chat_panel", "Chat Panel", WidgetCategory::Chat)
-            .description("Chat message display with markdown support")
+            .description("Chat message display with markdown support"),
     );
     registry.register(
         MofaWidgetDef::new("chat_input", "Chat Input", WidgetCategory::Chat)
-            .description("Text input with send button for chat")
+            .description("Text input with send button for chat"),
     );
     registry.register(
         MofaWidgetDef::new("log_panel", "Log Panel", WidgetCategory::Debug)
-            .description("Filterable log display with search")
+            .description("Filterable log display with search"),
     );
 
     // Register config widgets (Phase 4)
     registry.register(
         MofaWidgetDef::new("role_editor", "Role Editor", WidgetCategory::Config)
-            .description("Role configuration with model/voice/prompt editing")
+            .description("Role configuration with model/voice/prompt editing"),
     );
     registry.register(
         MofaWidgetDef::new("dataflow_picker", "Dataflow Picker", WidgetCategory::Config)
-            .description("YAML dataflow file selector")
+            .description("YAML dataflow file selector"),
     );
     registry.register(
-        MofaWidgetDef::new("provider_selector", "Provider Selector", WidgetCategory::Config)
-            .description("AI provider and model selector")
+        MofaWidgetDef::new(
+            "provider_selector",
+            "Provider Selector",
+            WidgetCategory::Config,
+        )
+        .description("AI provider and model selector"),
     );
 
     // Register shell components (Phase 5)
     registry.register(
         MofaWidgetDef::new("mofa_shell", "MoFA Shell", WidgetCategory::Shell)
-            .description("Main application shell layout with header, sidebar, content")
+            .description("Main application shell layout with header, sidebar, content"),
     );
     registry.register(
         MofaWidgetDef::new("shell_header", "Shell Header", WidgetCategory::Shell)
-            .description("Application header with navigation and theme toggle")
+            .description("Application header with navigation and theme toggle"),
     );
     registry.register(
         MofaWidgetDef::new("shell_sidebar", "Shell Sidebar", WidgetCategory::Shell)
-            .description("Collapsible navigation sidebar")
+            .description("Collapsible navigation sidebar"),
     );
     registry.register(
         MofaWidgetDef::new("status_bar", "Status Bar", WidgetCategory::Shell)
-            .description("Connection status and notifications bar")
+            .description("Connection status and notifications bar"),
     );
 
     registry

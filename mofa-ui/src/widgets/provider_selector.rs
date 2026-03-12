@@ -233,7 +233,9 @@ impl Widget for ProviderSelector {
         let actions = cx.capture_actions(|cx| self.view.handle_event(cx, event, scope));
 
         // Handle provider dropdown change
-        let provider_dd = self.view.drop_down(ids!(provider_section.provider_dropdown));
+        let provider_dd = self
+            .view
+            .drop_down(ids!(provider_section.provider_dropdown));
         if let Some(idx) = provider_dd.changed(&actions) {
             if idx < self.providers.len() {
                 self.selected_provider_index = Some(idx);
@@ -242,9 +244,11 @@ impl Widget for ProviderSelector {
                 // Update model dropdown if provider has models
                 if !provider.models.is_empty() && self.show_models {
                     self.view.view(ids!(model_section)).set_visible(cx, true);
-                    self.view.drop_down(ids!(model_section.model_dropdown))
+                    self.view
+                        .drop_down(ids!(model_section.model_dropdown))
                         .set_labels(cx, provider.models.clone());
-                    self.view.drop_down(ids!(model_section.model_dropdown))
+                    self.view
+                        .drop_down(ids!(model_section.model_dropdown))
                         .set_selected_item(cx, 0);
                 } else {
                     self.view.view(ids!(model_section)).set_visible(cx, false);
@@ -288,18 +292,21 @@ impl ProviderSelector {
         self.providers = providers.clone();
 
         let labels: Vec<String> = providers.iter().map(|p| p.name.clone()).collect();
-        self.view.drop_down(ids!(provider_section.provider_dropdown))
+        self.view
+            .drop_down(ids!(provider_section.provider_dropdown))
             .set_labels(cx, labels);
 
         if !providers.is_empty() {
             self.selected_provider_index = Some(0);
-            self.view.drop_down(ids!(provider_section.provider_dropdown))
+            self.view
+                .drop_down(ids!(provider_section.provider_dropdown))
                 .set_selected_item(cx, 0);
 
             // Show models for first provider if available
             if !providers[0].models.is_empty() && self.show_models {
                 self.view.view(ids!(model_section)).set_visible(cx, true);
-                self.view.drop_down(ids!(model_section.model_dropdown))
+                self.view
+                    .drop_down(ids!(model_section.model_dropdown))
                     .set_labels(cx, providers[0].models.clone());
             }
         }
@@ -311,13 +318,15 @@ impl ProviderSelector {
     pub fn set_selected_provider(&mut self, cx: &mut Cx, provider_id: &str) {
         if let Some(idx) = self.providers.iter().position(|p| p.id == provider_id) {
             self.selected_provider_index = Some(idx);
-            self.view.drop_down(ids!(provider_section.provider_dropdown))
+            self.view
+                .drop_down(ids!(provider_section.provider_dropdown))
                 .set_selected_item(cx, idx);
 
             let provider = &self.providers[idx];
             if !provider.models.is_empty() && self.show_models {
                 self.view.view(ids!(model_section)).set_visible(cx, true);
-                self.view.drop_down(ids!(model_section.model_dropdown))
+                self.view
+                    .drop_down(ids!(model_section.model_dropdown))
                     .set_labels(cx, provider.models.clone());
             } else {
                 self.view.view(ids!(model_section)).set_visible(cx, false);
@@ -333,7 +342,8 @@ impl ProviderSelector {
             if provider_idx < self.providers.len() {
                 let provider = &self.providers[provider_idx];
                 if let Some(idx) = provider.models.iter().position(|m| m == model) {
-                    self.view.drop_down(ids!(model_section.model_dropdown))
+                    self.view
+                        .drop_down(ids!(model_section.model_dropdown))
                         .set_selected_item(cx, idx);
                     self.view.redraw(cx);
                 }
@@ -361,7 +371,9 @@ impl ProviderSelector {
         match status {
             Some(text) => {
                 self.view.view(ids!(status_section)).set_visible(cx, true);
-                self.view.label(ids!(status_section.status_label)).set_text(cx, text);
+                self.view
+                    .label(ids!(status_section.status_label))
+                    .set_text(cx, text);
             }
             None => {
                 self.view.view(ids!(status_section)).set_visible(cx, false);
@@ -373,13 +385,17 @@ impl ProviderSelector {
     /// Set provider label text
     pub fn set_provider_label(&mut self, cx: &mut Cx, label: &str) {
         self.provider_label = label.to_string();
-        self.view.label(ids!(provider_section.provider_label)).set_text(cx, label);
+        self.view
+            .label(ids!(provider_section.provider_label))
+            .set_text(cx, label);
     }
 
     /// Set model label text
     pub fn set_model_label(&mut self, cx: &mut Cx, label: &str) {
         self.model_label = label.to_string();
-        self.view.label(ids!(model_section.model_label)).set_text(cx, label);
+        self.view
+            .label(ids!(model_section.model_label))
+            .set_text(cx, label);
     }
 
     /// Apply dark mode
@@ -387,41 +403,64 @@ impl ProviderSelector {
         self.dark_mode = dark_mode;
 
         // Provider section
-        self.view.label(ids!(provider_section.provider_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.drop_down(ids!(provider_section.provider_dropdown)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-            popup_menu: {
-                draw_bg: { dark_mode: (dark_mode) }
-                menu_item: {
+        self.view
+            .label(ids!(provider_section.provider_label))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+        self.view
+            .drop_down(ids!(provider_section.provider_dropdown))
+            .apply_over(
+                cx,
+                live! {
                     draw_bg: { dark_mode: (dark_mode) }
                     draw_text: { dark_mode: (dark_mode) }
-                }
-            }
-        });
+                    popup_menu: {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        menu_item: {
+                            draw_bg: { dark_mode: (dark_mode) }
+                            draw_text: { dark_mode: (dark_mode) }
+                        }
+                    }
+                },
+            );
 
         // Model section
-        self.view.label(ids!(model_section.model_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.drop_down(ids!(model_section.model_dropdown)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-            popup_menu: {
-                draw_bg: { dark_mode: (dark_mode) }
-                menu_item: {
+        self.view.label(ids!(model_section.model_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .drop_down(ids!(model_section.model_dropdown))
+            .apply_over(
+                cx,
+                live! {
                     draw_bg: { dark_mode: (dark_mode) }
                     draw_text: { dark_mode: (dark_mode) }
-                }
-            }
-        });
+                    popup_menu: {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        menu_item: {
+                            draw_bg: { dark_mode: (dark_mode) }
+                            draw_text: { dark_mode: (dark_mode) }
+                        }
+                    }
+                },
+            );
 
         // Status section
-        self.view.label(ids!(status_section.status_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view
+            .label(ids!(status_section.status_label))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
         self.view.redraw(cx);
     }
@@ -451,7 +490,8 @@ impl ProviderSelectorRef {
 
     /// Get currently selected provider ID
     pub fn get_selected_provider_id(&self) -> Option<String> {
-        self.borrow().and_then(|inner| inner.get_selected_provider().map(|p| p.id.clone()))
+        self.borrow()
+            .and_then(|inner| inner.get_selected_provider().map(|p| p.id.clone()))
     }
 
     /// Get currently selected model
@@ -489,7 +529,9 @@ impl ProviderSelectorRef {
 
     /// Check if provider selection changed
     pub fn provider_changed(&self, actions: &Actions) -> Option<String> {
-        if let ProviderSelectorAction::ProviderChanged(id) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let ProviderSelectorAction::ProviderChanged(id) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(id)
         } else {
             None
@@ -498,7 +540,9 @@ impl ProviderSelectorRef {
 
     /// Check if model selection changed
     pub fn model_changed(&self, actions: &Actions) -> Option<String> {
-        if let ProviderSelectorAction::ModelChanged(model) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let ProviderSelectorAction::ModelChanged(model) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(model)
         } else {
             None

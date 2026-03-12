@@ -1,7 +1,7 @@
 //! Add Provider Modal - Dialog for adding custom providers
 
+use crate::data::{Provider, ProviderConnectionStatus, ProviderId, ProviderType};
 use makepad_widgets::*;
-use crate::data::{Provider, ProviderId, ProviderType, ProviderConnectionStatus};
 
 live_design! {
     use link::theme::*;
@@ -395,12 +395,20 @@ impl Widget for AddProviderModal {
         };
 
         // Handle add button click
-        if self.view.button(ids!(dialog_container.dialog.actions.add_button)).clicked(actions) {
+        if self
+            .view
+            .button(ids!(dialog_container.dialog.actions.add_button))
+            .clicked(actions)
+        {
             cx.widget_action(uid, &scope.path, AddProviderModalAction::AddClicked);
         }
 
         // Handle cancel button click
-        if self.view.button(ids!(dialog_container.dialog.actions.cancel_button)).clicked(actions) {
+        if self
+            .view
+            .button(ids!(dialog_container.dialog.actions.cancel_button))
+            .clicked(actions)
+        {
             cx.widget_action(uid, &scope.path, AddProviderModalAction::CancelClicked);
         }
     }
@@ -417,9 +425,18 @@ impl AddProviderModalRef {
             inner.view.set_visible(cx, true);
 
             // Clear inputs - using full paths
-            inner.view.text_input(ids!(dialog_container.dialog.name_section.name_input)).set_text(cx, "");
-            inner.view.text_input(ids!(dialog_container.dialog.host_section.host_input)).set_text(cx, "");
-            inner.view.text_input(ids!(dialog_container.dialog.key_section.key_input)).set_text(cx, "");
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.name_section.name_input))
+                .set_text(cx, "");
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.host_section.host_input))
+                .set_text(cx, "");
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.key_section.key_input))
+                .set_text(cx, "");
 
             inner.view.redraw(cx);
         }
@@ -435,17 +452,32 @@ impl AddProviderModalRef {
 
     /// Check if modal is visible
     pub fn is_visible(&self) -> bool {
-        self.borrow().map(|inner| inner.view.visible()).unwrap_or(false)
+        self.borrow()
+            .map(|inner| inner.view.visible())
+            .unwrap_or(false)
     }
 
     /// Get the form values and create a Provider
     pub fn get_provider(&self) -> Option<Provider> {
         self.borrow().and_then(|inner| {
-            let name = inner.view.text_input(ids!(dialog_container.dialog.name_section.name_input)).text();
-            let host = inner.view.text_input(ids!(dialog_container.dialog.host_section.host_input)).text();
+            let name = inner
+                .view
+                .text_input(ids!(dialog_container.dialog.name_section.name_input))
+                .text();
+            let host = inner
+                .view
+                .text_input(ids!(dialog_container.dialog.host_section.host_input))
+                .text();
             let key = {
-                let k = inner.view.text_input(ids!(dialog_container.dialog.key_section.key_input)).text();
-                if k.is_empty() { None } else { Some(k) }
+                let k = inner
+                    .view
+                    .text_input(ids!(dialog_container.dialog.key_section.key_input))
+                    .text();
+                if k.is_empty() {
+                    None
+                } else {
+                    Some(k)
+                }
             };
 
             if name.is_empty() || host.is_empty() {
@@ -453,11 +485,7 @@ impl AddProviderModalRef {
             }
 
             // Generate a unique ID from the name
-            let id = ProviderId::from(
-                name.to_lowercase()
-                    .replace(" ", "_")
-                    .replace("-", "_")
-            );
+            let id = ProviderId::from(name.to_lowercase().replace(" ", "_").replace("-", "_"));
 
             Some(Provider {
                 id,
@@ -479,39 +507,84 @@ impl AddProviderModalRef {
             inner.dark_mode = dark_mode;
 
             // Dialog background
-            inner.view.view(ids!(dialog_container.dialog)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-            });
+            inner.view.view(ids!(dialog_container.dialog)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                },
+            );
 
             // Header label
-            inner.view.label(ids!(dialog_container.dialog.header.header_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner
+                .view
+                .label(ids!(dialog_container.dialog.header.header_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
 
             // Field labels
-            inner.view.label(ids!(dialog_container.dialog.name_section.name_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(dialog_container.dialog.host_section.host_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.label(ids!(dialog_container.dialog.key_section.key_label)).apply_over(cx, live!{
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner
+                .view
+                .label(ids!(dialog_container.dialog.name_section.name_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
+            inner
+                .view
+                .label(ids!(dialog_container.dialog.host_section.host_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
+            inner
+                .view
+                .label(ids!(dialog_container.dialog.key_section.key_label))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
 
             // Text inputs
-            inner.view.text_input(ids!(dialog_container.dialog.name_section.name_input)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.text_input(ids!(dialog_container.dialog.host_section.host_input)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-                draw_text: { dark_mode: (dark_mode) }
-            });
-            inner.view.text_input(ids!(dialog_container.dialog.key_section.key_input)).apply_over(cx, live!{
-                draw_bg: { dark_mode: (dark_mode) }
-                draw_text: { dark_mode: (dark_mode) }
-            });
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.name_section.name_input))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.host_section.host_input))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
+            inner
+                .view
+                .text_input(ids!(dialog_container.dialog.key_section.key_input))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
 
             inner.view.redraw(cx);
         }
@@ -521,8 +594,10 @@ impl AddProviderModalRef {
     pub fn play_save_animation(&self, cx: &mut Cx) {
         if let Some(mut inner) = self.borrow_mut() {
             // Flash the button green by setting save_progress
-            inner.view.button(ids!(dialog_container.dialog.actions.add_button))
-                .apply_over(cx, live!{ draw_bg: { save_progress: 1.0 } });
+            inner
+                .view
+                .button(ids!(dialog_container.dialog.actions.add_button))
+                .apply_over(cx, live! { draw_bg: { save_progress: 1.0 } });
             inner.view.redraw(cx);
         }
     }

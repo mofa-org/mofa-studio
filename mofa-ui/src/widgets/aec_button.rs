@@ -118,11 +118,7 @@ impl Widget for AecButton {
         // Handle click - use self.widget_uid() to match what AecButtonRef::clicked() looks for
         match event.hits(cx, self.view.area()) {
             Hit::FingerUp(fe) if fe.is_over && fe.was_tap() => {
-                cx.widget_action(
-                    self.widget_uid(),
-                    &scope.path,
-                    AecButtonAction::Clicked,
-                );
+                cx.widget_action(self.widget_uid(), &scope.path, AecButtonAction::Clicked);
             }
             _ => {}
         }
@@ -164,12 +160,15 @@ impl AecButton {
 
     /// Update shader instance variables
     fn update_shader(&mut self, cx: &mut Cx) {
-        self.view.apply_over(cx, live! {
-            draw_bg: {
-                enabled: (if self.enabled { 1.0 } else { 0.0 }),
-                speaking: (if self.speaking { 1.0 } else { 0.0 }),
-            }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: {
+                    enabled: (if self.enabled { 1.0 } else { 0.0 }),
+                    speaking: (if self.speaking { 1.0 } else { 0.0 }),
+                }
+            },
+        );
         self.view.redraw(cx);
     }
 }
@@ -177,7 +176,9 @@ impl AecButton {
 impl AecButtonRef {
     /// Check if AEC is enabled
     pub fn is_enabled(&self) -> bool {
-        self.borrow().map(|inner| inner.is_enabled()).unwrap_or(false)
+        self.borrow()
+            .map(|inner| inner.is_enabled())
+            .unwrap_or(false)
     }
 
     /// Set AEC enabled state
@@ -196,7 +197,9 @@ impl AecButtonRef {
 
     /// Check if speaking is detected
     pub fn is_speaking(&self) -> bool {
-        self.borrow().map(|inner| inner.is_speaking()).unwrap_or(false)
+        self.borrow()
+            .map(|inner| inner.is_speaking())
+            .unwrap_or(false)
     }
 
     /// Set speaking state

@@ -1096,13 +1096,16 @@ impl SidebarRef {
             );
 
             // ASR tab
-            inner.view.button(ids!(main_content.mofa_asr_tab)).apply_over(
-                cx,
-                live! {
-                    draw_bg: { dark_mode: (dark_mode) }
-                    draw_text: { dark_mode: (dark_mode) }
-                },
-            );
+            inner
+                .view
+                .button(ids!(main_content.mofa_asr_tab))
+                .apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        draw_text: { dark_mode: (dark_mode) }
+                    },
+                );
 
             // Settings divider
             inner.view.view(ids!(settings_divider)).apply_over(

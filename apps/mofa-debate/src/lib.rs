@@ -7,15 +7,20 @@ pub mod screen;
 pub use dora_integration::{DoraCommand, DoraEvent, DoraIntegration};
 // Re-export shared modules from mofa-ui
 pub use mofa_ui::{
-    // MofaHero widget
-    ConnectionStatus, MofaHero, MofaHeroAction, MofaHeroRef, MofaHeroWidgetExt,
+    AudioDeviceInfo,
     // Audio infrastructure
-    AudioManager, AudioDeviceInfo,
+    AudioManager,
+    // MofaHero widget
+    ConnectionStatus,
+    MofaHero,
+    MofaHeroAction,
+    MofaHeroRef,
+    MofaHeroWidgetExt,
 };
 pub use screen::MoFaDebateScreen;
 pub use screen::MoFaDebateScreenWidgetRefExt; // Export WidgetRefExt for timer control
 
-use makepad_widgets::{Cx, live_id, LiveId};
+use makepad_widgets::{live_id, Cx, LiveId};
 use mofa_widgets::{AppInfo, MofaApp};
 
 /// MoFA Debate app descriptor

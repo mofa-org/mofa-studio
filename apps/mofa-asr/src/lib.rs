@@ -5,6 +5,7 @@
 //! - SenseVoice: Multi-language (zh/en/ja), ~3x real-time
 
 pub mod dora_integration;
+#[cfg(not(test))]
 pub mod screen;
 
 pub use dora_integration::{DoraCommand, DoraEvent, DoraIntegration};
@@ -15,8 +16,11 @@ pub use mofa_ui::{
     // Audio infrastructure
     AudioManager, AudioDeviceInfo,
 };
+#[cfg(not(test))]
 pub use screen::MoFaASRScreen;
+#[cfg(not(test))]
 pub use screen::MoFaASRScreenRef;
+#[cfg(not(test))]
 pub use screen::MoFaASRScreenWidgetRefExt;
 
 use makepad_widgets::{Cx, live_id, LiveId};
@@ -39,10 +43,17 @@ impl MofaApp for MoFaASRApp {
     }
 
     fn live_design(cx: &mut Cx) {
+        #[cfg(not(test))]
+        {
         // Shared widgets (LedMeter, MicButton, AecButton, ChatPanel, MofaLogPanel)
         // are registered centrally by mofa_ui::widgets::live_design(cx) in the shell.
-        moly_kit::widgets::live_design(cx);
         screen::live_design(cx);
+        }
+
+        #[cfg(test)]
+        {
+            let _ = cx;
+        }
     }
 }
 

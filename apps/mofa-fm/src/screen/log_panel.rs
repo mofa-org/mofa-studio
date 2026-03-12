@@ -26,7 +26,10 @@ const LOG_UPDATE_THROTTLE: Duration = Duration::from_millis(200);
 impl MoFaFMScreen {
     /// Toggle log panel visibility
     pub(super) fn toggle_log_panel(&mut self, cx: &mut Cx) {
-        ::log::info!("toggle_log_panel called, collapsed={}", self.log_panel_collapsed);
+        ::log::info!(
+            "toggle_log_panel called, collapsed={}",
+            self.log_panel_collapsed
+        );
         self.log_panel_collapsed = !self.log_panel_collapsed;
 
         if self.log_panel_width == 0.0 {
@@ -35,17 +38,33 @@ impl MoFaFMScreen {
 
         if self.log_panel_collapsed {
             // Collapse: hide log content, show only toggle button
-            self.view.view(ids!(log_section)).apply_over(cx, live!{ width: Fit });
-            self.view.view(ids!(log_section.log_content_column)).set_visible(cx, false);
-            self.view.button(ids!(log_section.toggle_column.toggle_log_btn)).set_text(cx, "<");
-            self.view.view(ids!(splitter)).apply_over(cx, live!{ width: 0 });
+            self.view
+                .view(ids!(log_section))
+                .apply_over(cx, live! { width: Fit });
+            self.view
+                .view(ids!(log_section.log_content_column))
+                .set_visible(cx, false);
+            self.view
+                .button(ids!(log_section.toggle_column.toggle_log_btn))
+                .set_text(cx, "<");
+            self.view
+                .view(ids!(splitter))
+                .apply_over(cx, live! { width: 0 });
         } else {
             // Expand: show log content at saved width
             let width = self.log_panel_width;
-            self.view.view(ids!(log_section)).apply_over(cx, live!{ width: (width) });
-            self.view.view(ids!(log_section.log_content_column)).set_visible(cx, true);
-            self.view.button(ids!(log_section.toggle_column.toggle_log_btn)).set_text(cx, ">");
-            self.view.view(ids!(splitter)).apply_over(cx, live!{ width: 16 });
+            self.view
+                .view(ids!(log_section))
+                .apply_over(cx, live! { width: (width) });
+            self.view
+                .view(ids!(log_section.log_content_column))
+                .set_visible(cx, true);
+            self.view
+                .button(ids!(log_section.toggle_column.toggle_log_btn))
+                .set_text(cx, ">");
+            self.view
+                .view(ids!(splitter))
+                .apply_over(cx, live! { width: 16 });
 
             // Always update display when expanding (logs may have accumulated while collapsed)
             self.update_log_display_now(cx);
@@ -61,14 +80,17 @@ impl MoFaFMScreen {
         let container_rect = self.view.area().rect(cx);
         let padding = 16.0; // Match screen padding
         let new_log_width = (container_rect.pos.x + container_rect.size.x - abs_x - padding)
-            .max(150.0)  // Minimum log panel width
-            .min(container_rect.size.x - 400.0);  // Leave space for main content
+            .max(150.0) // Minimum log panel width
+            .min(container_rect.size.x - 400.0); // Leave space for main content
 
         self.log_panel_width = new_log_width;
 
-        self.view.view(ids!(log_section)).apply_over(cx, live!{
-            width: (new_log_width)
-        });
+        self.view.view(ids!(log_section)).apply_over(
+            cx,
+            live! {
+                width: (new_log_width)
+            },
+        );
 
         self.view.redraw(cx);
     }
@@ -85,7 +107,7 @@ impl MoFaFMScreen {
 
         // Check if enough time has passed since last update (sliding window throttle)
         let should_update = match self.last_log_update {
-            None => true,  // First update
+            None => true, // First update
             Some(last) => last.elapsed() >= LOG_UPDATE_THROTTLE,
         };
 
@@ -98,7 +120,17 @@ impl MoFaFMScreen {
 
     /// Force immediate update of log display (called by filter change or expand)
     fn update_log_display_now(&mut self, cx: &mut Cx) {
-        let search_text = self.view.text_input(ids!(log_section.log_content_column.log_header.log_filter_row.log_search)).text().to_lowercase();
+        let search_text = self
+            .view
+            .text_input(ids!(
+                log_section
+                    .log_content_column
+                    .log_header
+                    .log_filter_row
+                    .log_search
+            ))
+            .text()
+            .to_lowercase();
         let level_filter = self.log_level_filter;
         let node_filter = self.log_node_filter;
 
@@ -106,7 +138,9 @@ impl MoFaFMScreen {
         self.log_filter_cache = (level_filter, node_filter, search_text.clone());
 
         // Filter log entries with optimized matching
-        let filtered_logs: Vec<&str> = self.log_entries.iter()
+        let filtered_logs: Vec<&str> = self
+            .log_entries
+            .iter()
             .filter_map(|entry| {
                 // Level filter: 0=ALL, 1=DEBUG, 2=INFO, 3=WARN, 4=ERROR
                 let level_match = match level_filter {
@@ -117,7 +151,9 @@ impl MoFaFMScreen {
                     4 => entry.contains("[ERROR]"),
                     _ => true,
                 };
-                if !level_match { return None; }
+                if !level_match {
+                    return None;
+                }
 
                 // Node filter: 0=ALL, 1=ASR, 2=TTS, 3=LLM, 4=Bridge, 5=Monitor, 6=App
                 // Use case-insensitive matching only when needed
@@ -126,12 +162,22 @@ impl MoFaFMScreen {
                     1 => entry.contains("[ASR]") || entry.contains("asr") || entry.contains("ASR"),
                     2 => entry.contains("[TTS]") || entry.contains("tts") || entry.contains("TTS"),
                     3 => entry.contains("[LLM]") || entry.contains("llm") || entry.contains("LLM"),
-                    4 => entry.contains("[Bridge]") || entry.contains("bridge") || entry.contains("Bridge"),
-                    5 => entry.contains("[Monitor]") || entry.contains("monitor") || entry.contains("Monitor"),
+                    4 => {
+                        entry.contains("[Bridge]")
+                            || entry.contains("bridge")
+                            || entry.contains("Bridge")
+                    }
+                    5 => {
+                        entry.contains("[Monitor]")
+                            || entry.contains("monitor")
+                            || entry.contains("Monitor")
+                    }
                     6 => entry.contains("[App]") || entry.contains("app") || entry.contains("App"),
                     _ => true,
                 };
-                if !node_match { return None; }
+                if !node_match {
+                    return None;
+                }
 
                 // Search filter - only do lowercase conversion if search is active
                 if !search_text.is_empty() {
@@ -150,7 +196,10 @@ impl MoFaFMScreen {
         // (keeps UI responsive while full history remains searchable)
         let total_filtered = filtered_logs.len();
         let display_logs: Vec<&str> = if total_filtered > MAX_DISPLAY_ENTRIES {
-            filtered_logs.into_iter().skip(total_filtered - MAX_DISPLAY_ENTRIES).collect()
+            filtered_logs
+                .into_iter()
+                .skip(total_filtered - MAX_DISPLAY_ENTRIES)
+                .collect()
         } else {
             filtered_logs
         };
@@ -160,15 +209,25 @@ impl MoFaFMScreen {
             "No log entries".to_string()
         } else if total_filtered > MAX_DISPLAY_ENTRIES {
             // Show indicator that older logs are hidden
-            format!("... ({} older entries hidden) ...\n{}",
+            format!(
+                "... ({} older entries hidden) ...\n{}",
                 total_filtered - MAX_DISPLAY_ENTRIES,
-                display_logs.join("\n"))
+                display_logs.join("\n")
+            )
         } else {
             display_logs.join("\n")
         };
 
         // Update Label display (much faster than Markdown)
-        self.view.label(ids!(log_section.log_content_column.log_scroll.log_content_wrapper.log_content)).set_text(cx, &log_text);
+        self.view
+            .label(ids!(
+                log_section
+                    .log_content_column
+                    .log_scroll
+                    .log_content_wrapper
+                    .log_content
+            ))
+            .set_text(cx, &log_text);
         self.view.redraw(cx);
     }
 
@@ -176,7 +235,17 @@ impl MoFaFMScreen {
     /// This is the public API - it marks dirty and schedules throttled update
     pub(super) fn update_log_display(&mut self, cx: &mut Cx) {
         // Check if filter state changed (need immediate update)
-        let search_text = self.view.text_input(ids!(log_section.log_content_column.log_header.log_filter_row.log_search)).text().to_lowercase();
+        let search_text = self
+            .view
+            .text_input(ids!(
+                log_section
+                    .log_content_column
+                    .log_header
+                    .log_filter_row
+                    .log_search
+            ))
+            .text()
+            .to_lowercase();
         let current_filter = (self.log_level_filter, self.log_node_filter, search_text);
 
         if current_filter != self.log_filter_cache {
@@ -190,12 +259,24 @@ impl MoFaFMScreen {
 
     /// Copy filtered logs to clipboard
     pub(super) fn copy_logs_to_clipboard(&mut self, cx: &mut Cx) {
-        let search_text = self.view.text_input(ids!(log_section.log_content_column.log_header.log_filter_row.log_search)).text().to_lowercase();
+        let search_text = self
+            .view
+            .text_input(ids!(
+                log_section
+                    .log_content_column
+                    .log_header
+                    .log_filter_row
+                    .log_search
+            ))
+            .text()
+            .to_lowercase();
         let level_filter = self.log_level_filter;
         let node_filter = self.log_node_filter;
 
         // Filter log entries (same logic as update_log_display_now)
-        let filtered_logs: Vec<&str> = self.log_entries.iter()
+        let filtered_logs: Vec<&str> = self
+            .log_entries
+            .iter()
             .filter_map(|entry| {
                 let level_match = match level_filter {
                     0 => true,
@@ -205,19 +286,31 @@ impl MoFaFMScreen {
                     4 => entry.contains("[ERROR]"),
                     _ => true,
                 };
-                if !level_match { return None; }
+                if !level_match {
+                    return None;
+                }
 
                 let node_match = match node_filter {
                     0 => true,
                     1 => entry.contains("[ASR]") || entry.contains("asr") || entry.contains("ASR"),
                     2 => entry.contains("[TTS]") || entry.contains("tts") || entry.contains("TTS"),
                     3 => entry.contains("[LLM]") || entry.contains("llm") || entry.contains("LLM"),
-                    4 => entry.contains("[Bridge]") || entry.contains("bridge") || entry.contains("Bridge"),
-                    5 => entry.contains("[Monitor]") || entry.contains("monitor") || entry.contains("Monitor"),
+                    4 => {
+                        entry.contains("[Bridge]")
+                            || entry.contains("bridge")
+                            || entry.contains("Bridge")
+                    }
+                    5 => {
+                        entry.contains("[Monitor]")
+                            || entry.contains("monitor")
+                            || entry.contains("Monitor")
+                    }
                     6 => entry.contains("[App]") || entry.contains("app") || entry.contains("App"),
                     _ => true,
                 };
-                if !node_match { return None; }
+                if !node_match {
+                    return None;
+                }
 
                 if !search_text.is_empty() {
                     let entry_lower = entry.to_lowercase();
@@ -244,9 +337,11 @@ impl MoFaFMScreen {
         let chat_text = if self.chat_messages.is_empty() {
             "No chat messages".to_string()
         } else {
-            self.chat_messages.iter().map(|msg| {
-                format!("[{}] {}", msg.sender, msg.content)
-            }).collect::<Vec<_>>().join("\n\n")
+            self.chat_messages
+                .iter()
+                .map(|msg| format!("[{}] {}", msg.sender, msg.content))
+                .collect::<Vec<_>>()
+                .join("\n\n")
         };
 
         cx.copy_to_clipboard(&chat_text);

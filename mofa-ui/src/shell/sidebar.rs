@@ -229,13 +229,19 @@ impl ShellSidebar {
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
 
-        self.view.apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.view.view(ids!(bottom_divider)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.view(ids!(bottom_divider)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
         self.view.redraw(cx);
     }
@@ -251,7 +257,8 @@ impl ShellSidebarRef {
 
     /// Get currently selected item ID
     pub fn get_selected(&self) -> Option<String> {
-        self.borrow().and_then(|inner| inner.get_selected().map(|s| s.to_string()))
+        self.borrow()
+            .and_then(|inner| inner.get_selected().map(|s| s.to_string()))
     }
 
     /// Apply dark mode
@@ -263,7 +270,9 @@ impl ShellSidebarRef {
 
     /// Check if an item was selected
     pub fn item_selected(&self, actions: &Actions) -> Option<String> {
-        if let ShellSidebarAction::ItemSelected(id) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let ShellSidebarAction::ItemSelected(id) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(id)
         } else {
             None

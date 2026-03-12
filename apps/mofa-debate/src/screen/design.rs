@@ -6,7 +6,7 @@ use makepad_widgets::*;
 
 // Import widget types from mofa-ui for Rust code (WidgetExt traits)
 // Note: Live design uses inline definitions due to Makepad parser limitations
-use mofa_ui::{LedMeter, MicButton, AecButton};
+use mofa_ui::{AecButton, LedMeter, MicButton};
 
 use super::MoFaDebateScreen;
 
