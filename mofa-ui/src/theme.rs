@@ -161,7 +161,11 @@ impl MofaTheme {
 
     /// Get the target animation value (what dark_mode_anim should be when animation completes)
     pub fn target_value(&self) -> f64 {
-        if self.dark_mode { 1.0 } else { 0.0 }
+        if self.dark_mode {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
@@ -186,11 +190,11 @@ impl ThemeColor {
     /// Convert to RGB values (0.0-1.0)
     pub fn to_rgb(&self) -> (f32, f32, f32) {
         match self {
-            ThemeColor::Blue => (0.231, 0.510, 0.965),    // #3b82f6
-            ThemeColor::Indigo => (0.388, 0.400, 0.945),  // #6366f1
-            ThemeColor::Green => (0.063, 0.725, 0.506),   // #10b981
-            ThemeColor::Red => (0.937, 0.267, 0.267),     // #ef4444
-            ThemeColor::Amber => (0.961, 0.620, 0.043),   // #f59e0b
+            ThemeColor::Blue => (0.231, 0.510, 0.965),   // #3b82f6
+            ThemeColor::Indigo => (0.388, 0.400, 0.945), // #6366f1
+            ThemeColor::Green => (0.063, 0.725, 0.506),  // #10b981
+            ThemeColor::Red => (0.937, 0.267, 0.267),    // #ef4444
+            ThemeColor::Amber => (0.961, 0.620, 0.043),  // #f59e0b
             ThemeColor::Custom(rgba) => {
                 let r = ((rgba >> 24) & 0xFF) as f32 / 255.0;
                 let g = ((rgba >> 16) & 0xFF) as f32 / 255.0;

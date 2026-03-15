@@ -272,7 +272,11 @@ mod tests {
         let mut registry = MofaWidgetRegistry::new();
 
         registry.register(MofaWidgetDef::new("mic", "Mic", WidgetCategory::Audio));
-        registry.register(MofaWidgetDef::new("speaker", "Speaker", WidgetCategory::Audio));
+        registry.register(MofaWidgetDef::new(
+            "speaker",
+            "Speaker",
+            WidgetCategory::Audio,
+        ));
         registry.register(MofaWidgetDef::new("chat", "Chat", WidgetCategory::Chat));
 
         let audio = registry.by_category(&WidgetCategory::Audio);

@@ -20,7 +20,16 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev
+          sudo apt-get install -y \
+            libasound2-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
+            pkg-config
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -57,7 +66,16 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev
+          sudo apt-get install -y \
+            libasound2-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
+            pkg-config
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -87,7 +105,16 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev
+          sudo apt-get install -y \
+            libasound2-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
+            pkg-config
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

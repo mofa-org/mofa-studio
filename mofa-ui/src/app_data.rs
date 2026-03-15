@@ -49,10 +49,10 @@
 //! }
 //! ```
 
-use std::sync::Arc;
-use mofa_dora_bridge::SharedDoraState;
 use crate::registry::MofaWidgetRegistry;
 use crate::theme::MofaTheme;
+use mofa_dora_bridge::SharedDoraState;
+use std::sync::Arc;
 
 /// Application configuration
 #[derive(Clone, Debug, Default)]

@@ -9,11 +9,11 @@
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────────────────────┐
 //! │                         DORA DATAFLOW (Worker Threads)                       │
-//! ├─────────────────────┬─────────────────────┬─────────────────────────────────┤
-//! │  PromptInputBridge  │  AudioPlayerBridge  │  SystemLogBridge                │
-//! │                     │                     │                                 │
-//! │  state.chat.push()  │  state.audio.push() │  state.logs.push()              │
-//! └─────────┬───────────┴──────────┬──────────┴───────────────┬─────────────────┘
+//! ├────────────────────┬────────────────────┬────────────────┬────────────────────┤
+//! │  PromptInputBridge │  AudioPlayerBridge │ SystemLogBridge│ ChatViewerBridge   │
+//! │                    │                    │                │                    │
+//! │  state.chat.push() │ state.audio.push() │ state.logs()   │ state.chat.push()  │
+//! └────────┬───────────┴─────────┬──────────┴───────┬────────┴────────────────────┘
 //!           │         Direct write (no channels)              │
 //!           ▼                      ▼                          ▼
 //! ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -121,9 +121,11 @@ pub use controller::{DataflowController, DataflowState};
 pub use data::{AudioData, ChatMessage, ControlCommand, DoraData, LogEntry};
 pub use dispatcher::{DynamicNodeDispatcher, WidgetBinding};
 pub use error::{BridgeError, BridgeResult};
-pub use shared_state::{SharedDoraState, DoraStatus, ChatState, AudioState, DirtyVec, DirtyValue, MicState};
-pub use widgets::AecControlCommand;
 pub use parser::{DataflowParser, EnvRequirement, LogSource, ParsedDataflow, ParsedNode};
+pub use shared_state::{
+    AudioState, ChatState, DirtyValue, DirtyVec, DoraStatus, MicState, SharedDoraState,
+};
+pub use widgets::AecControlCommand;
 
 /// Prefix for MoFA built-in dynamic nodes in dataflow YAML
 pub const MOFA_NODE_PREFIX: &str = "mofa-";

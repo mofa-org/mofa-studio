@@ -13,11 +13,11 @@ use makepad_widgets::*;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::dora_integration::{DoraIntegration, DoraEvent};
+use crate::dora_integration::{DoraEvent, DoraIntegration};
 use mofa_settings::data::Preferences;
-use mofa_ui::{AecButtonWidgetExt, MicButtonWidgetExt, MofaHeroWidgetExt, ConnectionStatus};
+use mofa_ui::{AecButtonWidgetExt, ConnectionStatus, MicButtonWidgetExt, MofaHeroWidgetExt};
 
-use super::{MoFaFMScreen, ChatMessageEntry};
+use super::{ChatMessageEntry, MoFaFMScreen};
 
 impl MoFaFMScreen {
     // =====================================================
@@ -36,7 +36,10 @@ impl MoFaFMScreen {
         // Register AudioPlayer's force_mute flag with SharedDoraState for instant silencing
         // This allows the bridge to directly mute audio when human starts speaking
         if let Some(ref player) = self.audio_player {
-            integration.shared_dora_state().audio.register_force_mute(player.force_mute_flag());
+            integration
+                .shared_dora_state()
+                .audio
+                .register_force_mute(player.force_mute_flag());
             ::log::info!("Registered audio force_mute flag for instant interrupt");
         }
 
@@ -47,24 +50,29 @@ impl MoFaFMScreen {
 
         // Look for default dataflow relative to current working directory
         // Check multiple possible locations
-        let dataflow_path = std::env::current_dir()
-            .ok()
-            .and_then(|cwd| {
-                // First try: apps/mofa-fm/dataflow/voice-chat.yml (when running from workspace root)
-                let app_path = cwd.join("apps").join("mofa-fm").join("dataflow").join("voice-chat.yml");
-                if app_path.exists() {
-                    return Some(app_path);
-                }
-                // Second try: dataflow/voice-chat.yml (when running from app directory)
-                let local_path = cwd.join("dataflow").join("voice-chat.yml");
-                if local_path.exists() {
-                    return Some(local_path);
-                }
-                None
-            });
+        let dataflow_path = std::env::current_dir().ok().and_then(|cwd| {
+            // First try: apps/mofa-fm/dataflow/voice-chat.yml (when running from workspace root)
+            let app_path = cwd
+                .join("apps")
+                .join("mofa-fm")
+                .join("dataflow")
+                .join("voice-chat.yml");
+            if app_path.exists() {
+                return Some(app_path);
+            }
+            // Second try: dataflow/voice-chat.yml (when running from app directory)
+            let local_path = cwd.join("dataflow").join("voice-chat.yml");
+            if local_path.exists() {
+                return Some(local_path);
+            }
+            None
+        });
         self.dataflow_path = dataflow_path;
 
-        ::log::info!("Dora integration initialized, dataflow: {:?}", self.dataflow_path);
+        ::log::info!(
+            "Dora integration initialized, dataflow: {:?}",
+            self.dataflow_path
+        );
     }
 
     /// Start a dataflow
@@ -123,22 +131,24 @@ impl MoFaFMScreen {
         }
 
         // Collect data first, then update UI (avoids borrow checker issues)
-        let (chat_messages, audio_chunks, log_entries, status) = if let Some(ref dora) = self.dora_integration {
-            let shared_state = dora.shared_dora_state();
-            (
-                shared_state.chat.read_if_dirty(),
-                shared_state.audio.drain(),
-                shared_state.logs.read_if_dirty(),
-                shared_state.status.read_if_dirty(),
-            )
-        } else {
-            (None, Vec::new(), None, None)
-        };
+        let (chat_messages, audio_chunks, log_entries, status) =
+            if let Some(ref dora) = self.dora_integration {
+                let shared_state = dora.shared_dora_state();
+                (
+                    shared_state.chat.read_if_dirty(),
+                    shared_state.audio.drain(),
+                    shared_state.logs.read_if_dirty(),
+                    shared_state.status.read_if_dirty(),
+                )
+            } else {
+                (None, Vec::new(), None, None)
+            };
 
         // Update chat display if new messages
         if let Some(messages) = chat_messages {
             // Keep user messages (sender == "You") from local state
-            let user_messages: Vec<ChatMessageEntry> = self.chat_messages
+            let user_messages: Vec<ChatMessageEntry> = self
+                .chat_messages
                 .iter()
                 .filter(|m| m.sender == "You")
                 .cloned()
@@ -193,12 +203,19 @@ impl MoFaFMScreen {
                 if !self.connected_bridges.contains(bridge) {
                     ::log::info!("Bridge connected: {}", bridge);
                     let display_name = Self::format_bridge_name(bridge);
-                    self.add_log(cx, &format!("[INFO] [Bridge] {} connected to dora dataflow", display_name));
+                    self.add_log(
+                        cx,
+                        &format!(
+                            "[INFO] [Bridge] {} connected to dora dataflow",
+                            display_name
+                        ),
+                    );
                     self.connected_bridges.push(bridge.clone());
                 }
             }
             // Check for disconnected bridges
-            let disconnected: Vec<_> = self.connected_bridges
+            let disconnected: Vec<_> = self
+                .connected_bridges
                 .iter()
                 .filter(|b| !dora_status.active_bridges.contains(b))
                 .cloned()
@@ -206,7 +223,13 @@ impl MoFaFMScreen {
             for bridge in disconnected {
                 ::log::info!("Bridge disconnected: {}", bridge);
                 let display_name = Self::format_bridge_name(&bridge);
-                self.add_log(cx, &format!("[WARN] [Bridge] {} disconnected from dora dataflow", display_name));
+                self.add_log(
+                    cx,
+                    &format!(
+                        "[WARN] [Bridge] {} disconnected from dora dataflow",
+                        display_name
+                    ),
+                );
                 self.connected_bridges.retain(|b| b != &bridge);
             }
         }
@@ -215,16 +238,17 @@ impl MoFaFMScreen {
         // Poll mic state from AEC input bridge
         // =====================================================
         // Read all mic state first to avoid borrow checker issues
-        let (mic_level, aec_enabled_state, is_speaking) = if let Some(ref dora) = self.dora_integration {
-            let shared_state = dora.shared_dora_state();
-            (
-                shared_state.mic.read_level_if_dirty(),
-                shared_state.mic.read_aec_enabled_if_dirty(),
-                shared_state.mic.read_speaking_if_dirty(),
-            )
-        } else {
-            (None, None, None)
-        };
+        let (mic_level, aec_enabled_state, is_speaking) =
+            if let Some(ref dora) = self.dora_integration {
+                let shared_state = dora.shared_dora_state();
+                (
+                    shared_state.mic.read_level_if_dirty(),
+                    shared_state.mic.read_aec_enabled_if_dirty(),
+                    shared_state.mic.read_speaking_if_dirty(),
+                )
+            } else {
+                (None, None, None)
+            };
 
         // Update mic level LEDs (from AEC bridge)
         if let Some(level) = mic_level {
@@ -235,14 +259,30 @@ impl MoFaFMScreen {
         if let Some(aec_enabled) = aec_enabled_state {
             if self.aec_enabled != aec_enabled {
                 self.aec_enabled = aec_enabled;
-                self.view.aec_button(ids!(running_tab_content.audio_container.audio_controls_row.aec_container.aec_group.aec_toggle_btn))
+                self.view
+                    .aec_button(ids!(
+                        running_tab_content
+                            .audio_container
+                            .audio_controls_row
+                            .aec_container
+                            .aec_group
+                            .aec_toggle_btn
+                    ))
                     .set_enabled(cx, aec_enabled);
             }
         }
 
         // Update AEC button VAD indicator (red when speaking, green when silent)
         if let Some(speaking) = is_speaking {
-            self.view.aec_button(ids!(running_tab_content.audio_container.audio_controls_row.aec_container.aec_group.aec_toggle_btn))
+            self.view
+                .aec_button(ids!(
+                    running_tab_content
+                        .audio_container
+                        .audio_controls_row
+                        .aec_container
+                        .aec_group
+                        .aec_toggle_btn
+                ))
                 .set_speaking(cx, speaking);
         }
 
@@ -259,20 +299,41 @@ impl MoFaFMScreen {
             match event {
                 DoraEvent::DataflowStarted { dataflow_id } => {
                     ::log::info!("Dataflow started: {}", dataflow_id);
-                    self.add_log(cx, &format!("[INFO] [App] Dataflow started: {}", dataflow_id));
-                    self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Connected);
+                    self.add_log(
+                        cx,
+                        &format!("[INFO] [App] Dataflow started: {}", dataflow_id),
+                    );
+                    self.view
+                        .mofa_hero(ids!(left_column.mofa_hero))
+                        .set_connection_status(cx, ConnectionStatus::Connected);
                     // Clear tracking state on new dataflow
                     self.connected_bridges.clear();
                     self.processed_dora_log_count = 0;
 
                     // Enable mic recording indicator (mic is now active via dora)
-                    self.view.mic_button(ids!(running_tab_content.audio_container.audio_controls_row.mic_container.mic_group.mic_mute_btn))
+                    self.view
+                        .mic_button(ids!(
+                            running_tab_content
+                                .audio_container
+                                .audio_controls_row
+                                .mic_container
+                                .mic_group
+                                .mic_mute_btn
+                        ))
                         .set_recording(cx, !self.mic_muted);
 
                     // AEC is enabled by default when dataflow starts
                     // IMPORTANT: Also notify the bridge to enable AEC (it defaults to CPAL/no-AEC)
                     self.aec_enabled = true;
-                    self.view.aec_button(ids!(running_tab_content.audio_container.audio_controls_row.aec_container.aec_group.aec_toggle_btn))
+                    self.view
+                        .aec_button(ids!(
+                            running_tab_content
+                                .audio_container
+                                .audio_controls_row
+                                .aec_container
+                                .aec_group
+                                .aec_toggle_btn
+                        ))
                         .set_enabled(cx, true);
                     if let Some(ref dora) = self.dora_integration {
                         dora.set_aec_enabled(true);
@@ -282,18 +343,38 @@ impl MoFaFMScreen {
                 DoraEvent::DataflowStopped => {
                     ::log::info!("Dataflow stopped");
                     self.add_log(cx, "[INFO] [App] Dataflow stopped");
-                    self.view.mofa_hero(ids!(left_column.mofa_hero)).set_running(cx, false);
-                    self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Stopped);
+                    self.view
+                        .mofa_hero(ids!(left_column.mofa_hero))
+                        .set_running(cx, false);
+                    self.view
+                        .mofa_hero(ids!(left_column.mofa_hero))
+                        .set_connection_status(cx, ConnectionStatus::Stopped);
                     // Clear tracking state on stop
                     self.connected_bridges.clear();
                     self.processed_dora_log_count = 0;
 
                     // Disable mic recording indicator (dora is stopped)
-                    self.view.mic_button(ids!(running_tab_content.audio_container.audio_controls_row.mic_container.mic_group.mic_mute_btn))
+                    self.view
+                        .mic_button(ids!(
+                            running_tab_content
+                                .audio_container
+                                .audio_controls_row
+                                .mic_container
+                                .mic_group
+                                .mic_mute_btn
+                        ))
                         .set_recording(cx, false);
 
                     // Reset AEC button state (speaking indicator off, but keep enabled state for visual)
-                    self.view.aec_button(ids!(running_tab_content.audio_container.audio_controls_row.aec_container.aec_group.aec_toggle_btn))
+                    self.view
+                        .aec_button(ids!(
+                            running_tab_content
+                                .audio_container
+                                .audio_controls_row
+                                .aec_container
+                                .aec_group
+                                .aec_toggle_btn
+                        ))
                         .set_speaking(cx, false);
 
                     // Reset mic level LEDs to zero
@@ -305,19 +386,27 @@ impl MoFaFMScreen {
                 DoraEvent::Error { message } => {
                     ::log::error!("Dora error: {}", message);
                     self.add_log(cx, &format!("[ERROR] [Dora] {}", message));
-                    self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Failed);
+                    self.view
+                        .mofa_hero(ids!(left_column.mofa_hero))
+                        .set_connection_status(cx, ConnectionStatus::Failed);
                 }
             }
         }
 
         // Update audio buffer level in audio panel (from audio player)
         // Extract all data first to avoid borrow conflicts with update_buffer_level
-        let (buffer_pct, is_playing, active_idx, waveform_data) = if let Some(ref player) = self.audio_player {
-            let pct = player.buffer_fill_percentage() / 100.0;
-            (Some(pct), player.is_playing(), player.current_participant_idx(), player.get_waveform_data())
-        } else {
-            (None, false, None, Vec::new())
-        };
+        let (buffer_pct, is_playing, active_idx, waveform_data) =
+            if let Some(ref player) = self.audio_player {
+                let pct = player.buffer_fill_percentage() / 100.0;
+                (
+                    Some(pct),
+                    player.is_playing(),
+                    player.current_participant_idx(),
+                    player.get_waveform_data(),
+                )
+            } else {
+                (None, false, None, Vec::new())
+            };
         if let Some(pct) = buffer_pct {
             self.update_buffer_level(cx, pct);
         }
@@ -330,7 +419,10 @@ impl MoFaFMScreen {
                 let samples = &waveform_data;
                 let band_size = samples.len() / 8;
                 let mut levels = [0.0f32; 8];
-                let peak = samples.iter().map(|s| s.abs()).fold(0.0f32, |a, b| a.max(b));
+                let peak = samples
+                    .iter()
+                    .map(|s| s.abs())
+                    .fold(0.0f32, |a, b| a.max(b));
                 let norm_factor = if peak > 0.01 { 1.0 / peak } else { 1.0 };
 
                 for i in 0..8 {
@@ -347,9 +439,27 @@ impl MoFaFMScreen {
 
             // Update participant panels using direct apply_over (exactly like conference-dashboard)
             let panel_ids: [&[LiveId]; 3] = [
-                ids!(left_column.running_tab_content.participant_container.participant_bar.student1_panel),
-                ids!(left_column.running_tab_content.participant_container.participant_bar.student2_panel),
-                ids!(left_column.running_tab_content.participant_container.participant_bar.tutor_panel),
+                ids!(
+                    left_column
+                        .running_tab_content
+                        .participant_container
+                        .participant_bar
+                        .student1_panel
+                ),
+                ids!(
+                    left_column
+                        .running_tab_content
+                        .participant_container
+                        .participant_bar
+                        .student2_panel
+                ),
+                ids!(
+                    left_column
+                        .running_tab_content
+                        .participant_container
+                        .participant_bar
+                        .tutor_panel
+                ),
             ];
 
             for (i, panel_id) in panel_ids.into_iter().enumerate() {
@@ -435,16 +545,24 @@ impl MoFaFMScreen {
         // Log which keys are available
         let has_openai = env_vars.contains_key("OPENAI_API_KEY");
         let has_deepseek = env_vars.contains_key("DEEPSEEK_API_KEY");
-        self.add_log(cx, &format!("[INFO] [App] API Keys: OpenAI={}, DeepSeek={}",
-            if has_openai { "✓" } else { "✗" },
-            if has_deepseek { "✓" } else { "✗" }
-        ));
+        self.add_log(
+            cx,
+            &format!(
+                "[INFO] [App] API Keys: OpenAI={}, DeepSeek={}",
+                if has_openai { "✓" } else { "✗" },
+                if has_deepseek { "✓" } else { "✗" }
+            ),
+        );
 
         // Find the dataflow file relative to current working directory
         let dataflow_path = self.dataflow_path.clone().unwrap_or_else(|| {
             let cwd = std::env::current_dir().unwrap_or_default();
             // First try: apps/mofa-fm/dataflow/voice-chat.yml (when running from workspace root)
-            let app_path = cwd.join("apps").join("mofa-fm").join("dataflow").join("voice-chat.yml");
+            let app_path = cwd
+                .join("apps")
+                .join("mofa-fm")
+                .join("dataflow")
+                .join("voice-chat.yml");
             if app_path.exists() {
                 return app_path;
             }
@@ -453,22 +571,36 @@ impl MoFaFMScreen {
         });
 
         if !dataflow_path.exists() {
-            self.add_log(cx, &format!("[ERROR] [App] Dataflow not found: {:?}", dataflow_path));
-            self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Failed);
+            self.add_log(
+                cx,
+                &format!("[ERROR] [App] Dataflow not found: {:?}", dataflow_path),
+            );
+            self.view
+                .mofa_hero(ids!(left_column.mofa_hero))
+                .set_connection_status(cx, ConnectionStatus::Failed);
             return;
         }
 
-        self.add_log(cx, &format!("[INFO] [App] Starting dataflow: {:?}", dataflow_path));
+        self.add_log(
+            cx,
+            &format!("[INFO] [App] Starting dataflow: {:?}", dataflow_path),
+        );
 
         // Update UI state - show connecting
-        self.view.mofa_hero(ids!(left_column.mofa_hero)).set_running(cx, true);
-        self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Connecting);
+        self.view
+            .mofa_hero(ids!(left_column.mofa_hero))
+            .set_running(cx, true);
+        self.view
+            .mofa_hero(ids!(left_column.mofa_hero))
+            .set_connection_status(cx, ConnectionStatus::Connecting);
 
         // Start dataflow with environment variables
         if let Some(ref dora) = self.dora_integration {
             if !dora.start_dataflow_with_env(&dataflow_path, env_vars) {
                 self.add_log(cx, "[ERROR] [App] Failed to send start command");
-                self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Failed);
+                self.view
+                    .mofa_hero(ids!(left_column.mofa_hero))
+                    .set_connection_status(cx, ConnectionStatus::Failed);
             }
         }
 
@@ -482,7 +614,9 @@ impl MoFaFMScreen {
         self.add_log(cx, "[INFO] [App] Force stopping MoFA dataflow...");
 
         // Show "Stopping" state while stop is in progress
-        self.view.mofa_hero(ids!(left_column.mofa_hero)).set_connection_status(cx, ConnectionStatus::Stopping);
+        self.view
+            .mofa_hero(ids!(left_column.mofa_hero))
+            .set_connection_status(cx, ConnectionStatus::Stopping);
 
         // Force stop dataflow immediately (0s grace period)
         // The actual status update will come from DoraEvent::DataflowStopped

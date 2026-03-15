@@ -363,7 +363,9 @@ impl DoraIntegration {
                                 log::info!("Sending start_recording to AEC bridge");
                                 if let Err(e) = bridge.send(
                                     "control",
-                                    mofa_dora_bridge::DoraData::Json(serde_json::json!({"action": "start_recording"})),
+                                    mofa_dora_bridge::DoraData::Json(
+                                        serde_json::json!({"action": "start_recording"}),
+                                    ),
                                 ) {
                                     log::error!("Failed to send start_recording: {}", e);
                                 }
@@ -379,7 +381,9 @@ impl DoraIntegration {
                                 log::info!("Sending stop_recording to AEC bridge");
                                 if let Err(e) = bridge.send(
                                     "control",
-                                    mofa_dora_bridge::DoraData::Json(serde_json::json!({"action": "stop_recording"})),
+                                    mofa_dora_bridge::DoraData::Json(
+                                        serde_json::json!({"action": "stop_recording"}),
+                                    ),
                                 ) {
                                     log::error!("Failed to send stop_recording: {}", e);
                                 }

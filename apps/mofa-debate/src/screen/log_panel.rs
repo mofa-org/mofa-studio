@@ -2,8 +2,8 @@
 //!
 //! Handles log display, filtering, and clipboard operations.
 
-use mofa_ui::log_bridge;
 use makepad_widgets::*;
+use mofa_ui::log_bridge;
 
 use super::MoFaDebateScreen;
 

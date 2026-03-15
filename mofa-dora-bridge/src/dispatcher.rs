@@ -9,7 +9,9 @@ use crate::controller::DataflowController;
 use crate::error::{BridgeError, BridgeResult};
 use crate::parser::MofaNodeSpec;
 use crate::shared_state::SharedDoraState;
-use crate::widgets::{AecInputBridge, AudioPlayerBridge, PromptInputBridge, SystemLogBridge};
+use crate::widgets::{
+    AecInputBridge, AudioPlayerBridge, ChatViewerBridge, PromptInputBridge, SystemLogBridge,
+};
 use crate::MofaNodeType;
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -100,17 +102,17 @@ impl DynamicNodeDispatcher {
                     &node_spec.id,
                     shared_state.clone(),
                 )),
-                MofaNodeType::PromptInput | MofaNodeType::ChatOutput => Box::new(PromptInputBridge::with_shared_state(
+                MofaNodeType::PromptInput | MofaNodeType::ChatOutput => Box::new(
+                    PromptInputBridge::with_shared_state(&node_spec.id, shared_state.clone()),
+                ),
+                MofaNodeType::MicInput => Box::new(AecInputBridge::with_shared_state(
                     &node_spec.id,
                     shared_state.clone(),
                 )),
-                MofaNodeType::MicInput => {
-                    Box::new(AecInputBridge::with_shared_state(&node_spec.id, shared_state.clone()))
-                }
-                MofaNodeType::ChatViewer => {
-                    // TODO: Implement ChatViewerBridge
-                    continue;
-                }
+                MofaNodeType::ChatViewer => Box::new(ChatViewerBridge::with_shared_state(
+                    &node_spec.id,
+                    shared_state.clone(),
+                )),
                 MofaNodeType::ParticipantPanel => {
                     // ParticipantPanel functionality consolidated into AudioPlayerBridge
                     // No separate bridge needed - AudioPlayerBridge now handles LED visualization
@@ -121,7 +123,10 @@ impl DynamicNodeDispatcher {
                     // ASR engines run as separate OS processes (not dynamic bridges)
                     // to avoid MLX Metal GPU crashes from concurrent thread access.
                     // Dora manages their lifecycle via build+path in the YAML.
-                    debug!("Skipping bridge for process-based ASR node: {}", node_spec.id);
+                    debug!(
+                        "Skipping bridge for process-based ASR node: {}",
+                        node_spec.id
+                    );
                     continue;
                 }
             };
@@ -159,7 +164,9 @@ impl DynamicNodeDispatcher {
                 match bridge.connect() {
                     Ok(()) => {
                         info!("Connected bridge: {}", node_id);
-                        if let Some(binding) = self.bindings.iter_mut().find(|b| &b.node_id == node_id) {
+                        if let Some(binding) =
+                            self.bindings.iter_mut().find(|b| &b.node_id == node_id)
+                        {
                             binding.state = BridgeState::Connected;
                         }
                     }
@@ -235,7 +242,10 @@ impl DynamicNodeDispatcher {
             info!("Connected bridge: {}", node_id);
             Ok(())
         } else {
-            Err(BridgeError::Unknown(format!("Bridge not found: {}", node_id)))
+            Err(BridgeError::Unknown(format!(
+                "Bridge not found: {}",
+                node_id
+            )))
         }
     }
 
@@ -249,7 +259,10 @@ impl DynamicNodeDispatcher {
             info!("Disconnected bridge: {}", node_id);
             Ok(())
         } else {
-            Err(BridgeError::Unknown(format!("Bridge not found: {}", node_id)))
+            Err(BridgeError::Unknown(format!(
+                "Bridge not found: {}",
+                node_id
+            )))
         }
     }
 
@@ -278,7 +291,10 @@ impl DynamicNodeDispatcher {
             self.create_bridges()?;
         }
 
-        eprintln!("[Dispatcher] Connecting {} bridges to dora...", self.bridges.len());
+        eprintln!(
+            "[Dispatcher] Connecting {} bridges to dora...",
+            self.bridges.len()
+        );
         info!("Connecting {} bridges to dora...", self.bridges.len());
 
         const MAX_CONNECT_ATTEMPTS: usize = 15;

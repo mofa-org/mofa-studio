@@ -22,10 +22,8 @@ fn main() {
     let args = Args::parse();
 
     // Configure logging based on CLI args
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(args.log_filter()),
-    )
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(args.log_filter()))
+        .init();
 
     // Install panic hook to capture panic message before extern "C" abort
     std::panic::set_hook(Box::new(|info| {

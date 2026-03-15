@@ -200,15 +200,18 @@ impl LedMeter {
                 _ => self.view.view(ids!(led_5)),
             };
 
-            led_view.apply_over(cx, live! {
-                draw_bg: {
-                    active: (active_val),
-                    dark_mode: (self.dark_mode),
-                    color_r: (r as f64),
-                    color_g: (g as f64),
-                    color_b: (b as f64),
-                }
-            });
+            led_view.apply_over(
+                cx,
+                live! {
+                    draw_bg: {
+                        active: (active_val),
+                        dark_mode: (self.dark_mode),
+                        color_r: (r as f64),
+                        color_g: (g as f64),
+                        color_b: (b as f64),
+                    }
+                },
+            );
         }
 
         self.view.redraw(cx);

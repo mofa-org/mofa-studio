@@ -355,7 +355,11 @@ impl Widget for MofaLogPanel {
         if let Some(idx) = level_dd.changed(&actions) {
             self.level_filter = idx;
             self.update_display(cx);
-            cx.widget_action(self.widget_uid(), &scope.path, LogPanelAction::FilterChanged);
+            cx.widget_action(
+                self.widget_uid(),
+                &scope.path,
+                LogPanelAction::FilterChanged,
+            );
         }
 
         // Check node filter change
@@ -363,11 +367,18 @@ impl Widget for MofaLogPanel {
         if let Some(idx) = node_dd.changed(&actions) {
             self.node_filter = idx;
             self.update_display(cx);
-            cx.widget_action(self.widget_uid(), &scope.path, LogPanelAction::FilterChanged);
+            cx.widget_action(
+                self.widget_uid(),
+                &scope.path,
+                LogPanelAction::FilterChanged,
+            );
         }
 
         // Check search text change
-        let search_text = self.view.text_input(ids!(header.filter_row.search_input)).text();
+        let search_text = self
+            .view
+            .text_input(ids!(header.filter_row.search_input))
+            .text();
         if search_text != self.search_cache {
             self.search_cache = search_text;
             self.update_display(cx);
@@ -390,7 +401,7 @@ impl Widget for MofaLogPanel {
 
 impl MofaLogPanel {
     /// Add a log entry
-    pub fn add_log(&mut self, cx: &mut Cx, entry: &str) {
+    pub fn add_log(&mut self, _cx: &mut Cx, entry: &str) {
         self.entries.push(entry.to_string());
 
         // Prune oldest entries if over limit
@@ -420,7 +431,9 @@ impl MofaLogPanel {
         let search_lower = self.search_cache.to_lowercase();
 
         // Filter entries
-        let filtered: Vec<&str> = self.entries.iter()
+        let filtered: Vec<&str> = self
+            .entries
+            .iter()
             .filter_map(|entry| {
                 // Level filter
                 let level_match = match self.level_filter {
@@ -431,7 +444,9 @@ impl MofaLogPanel {
                     4 => entry.contains("[ERROR]"),
                     _ => true,
                 };
-                if !level_match { return None; }
+                if !level_match {
+                    return None;
+                }
 
                 // Node filter
                 let node_match = match self.node_filter {
@@ -444,7 +459,9 @@ impl MofaLogPanel {
                     6 => entry.contains("[App]") || entry.to_lowercase().contains("app"),
                     _ => true,
                 };
-                if !node_match { return None; }
+                if !node_match {
+                    return None;
+                }
 
                 // Search filter
                 if !search_lower.is_empty() {
@@ -460,7 +477,10 @@ impl MofaLogPanel {
         // Limit display
         let total = filtered.len();
         let display: Vec<&str> = if total > MAX_DISPLAY_ENTRIES {
-            filtered.into_iter().skip(total - MAX_DISPLAY_ENTRIES).collect()
+            filtered
+                .into_iter()
+                .skip(total - MAX_DISPLAY_ENTRIES)
+                .collect()
         } else {
             filtered
         };
@@ -469,14 +489,18 @@ impl MofaLogPanel {
         let text = if display.is_empty() {
             "No log entries".to_string()
         } else if total > MAX_DISPLAY_ENTRIES {
-            format!("... ({} older entries hidden) ...\n{}",
+            format!(
+                "... ({} older entries hidden) ...\n{}",
                 total - MAX_DISPLAY_ENTRIES,
-                display.join("\n"))
+                display.join("\n")
+            )
         } else {
             display.join("\n")
         };
 
-        self.view.label(ids!(log_scroll.content_wrapper.content)).set_text(cx, &text);
+        self.view
+            .label(ids!(log_scroll.content_wrapper.content))
+            .set_text(cx, &text);
         self.view.redraw(cx);
     }
 
@@ -484,7 +508,9 @@ impl MofaLogPanel {
     pub fn clear(&mut self, cx: &mut Cx) {
         self.entries.clear();
         self.display_dirty = false;
-        self.view.label(ids!(log_scroll.content_wrapper.content)).set_text(cx, "No log entries");
+        self.view
+            .label(ids!(log_scroll.content_wrapper.content))
+            .set_text(cx, "No log entries");
         self.view.redraw(cx);
     }
 
@@ -492,7 +518,9 @@ impl MofaLogPanel {
     pub fn get_filtered_logs(&self) -> String {
         let search_lower = self.search_cache.to_lowercase();
 
-        let filtered: Vec<&str> = self.entries.iter()
+        let filtered: Vec<&str> = self
+            .entries
+            .iter()
             .filter_map(|entry| {
                 let level_match = match self.level_filter {
                     0 => true,
@@ -502,7 +530,9 @@ impl MofaLogPanel {
                     4 => entry.contains("[ERROR]"),
                     _ => true,
                 };
-                if !level_match { return None; }
+                if !level_match {
+                    return None;
+                }
 
                 let node_match = match self.node_filter {
                     0 => true,
@@ -514,7 +544,9 @@ impl MofaLogPanel {
                     6 => entry.contains("[App]") || entry.to_lowercase().contains("app"),
                     _ => true,
                 };
-                if !node_match { return None; }
+                if !node_match {
+                    return None;
+                }
 
                 if !search_lower.is_empty() {
                     if !entry.to_lowercase().contains(&search_lower) {
@@ -536,33 +568,60 @@ impl MofaLogPanel {
     /// Apply dark mode
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
-        self.view.apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(header)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.label(ids!(header.title_row.title_label)).apply_over(cx, live! {
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.text_input(ids!(header.filter_row.search_input)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(header.filter_row.copy_btn)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.label(ids!(log_scroll.content_wrapper.content)).apply_over(cx, live! {
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.view(ids!(header)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .label(ids!(header.title_row.title_label))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+        self.view
+            .text_input(ids!(header.filter_row.search_input))
+            .apply_over(
+                cx,
+                live! {
+                    draw_bg: { dark_mode: (dark_mode) }
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
+        self.view.view(ids!(header.filter_row.copy_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .label(ids!(log_scroll.content_wrapper.content))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
         self.view.redraw(cx);
     }
 
     /// Set copy button animation state
     pub fn set_copy_flash(&mut self, cx: &mut Cx, value: f64) {
-        self.view.view(ids!(header.filter_row.copy_btn)).apply_over(cx, live! {
-            draw_bg: { copied: (value) }
-        });
+        self.view.view(ids!(header.filter_row.copy_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { copied: (value) }
+            },
+        );
         self.view.redraw(cx);
     }
 }
@@ -605,7 +664,9 @@ impl MofaLogPanelRef {
 
     /// Get filtered logs
     pub fn get_filtered_logs(&self) -> String {
-        self.borrow().map(|inner| inner.get_filtered_logs()).unwrap_or_default()
+        self.borrow()
+            .map(|inner| inner.get_filtered_logs())
+            .unwrap_or_default()
     }
 
     /// Apply dark mode
@@ -633,7 +694,8 @@ impl MofaLogPanelRef {
 
     /// Check if filter changed
     pub fn filter_changed(&self, actions: &Actions) -> bool {
-        if let LogPanelAction::FilterChanged = actions.find_widget_action(self.widget_uid()).cast() {
+        if let LogPanelAction::FilterChanged = actions.find_widget_action(self.widget_uid()).cast()
+        {
             true
         } else {
             false

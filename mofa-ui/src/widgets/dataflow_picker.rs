@@ -230,7 +230,11 @@ impl Widget for DataflowPicker {
         let actions = cx.capture_actions(|cx| self.view.handle_event(cx, event, scope));
 
         // Handle browse button click
-        if self.view.button(ids!(path_row.browse_btn)).clicked(&actions) {
+        if self
+            .view
+            .button(ids!(path_row.browse_btn))
+            .clicked(&actions)
+        {
             cx.widget_action(
                 self.widget_uid(),
                 &scope.path,
@@ -264,20 +268,26 @@ impl DataflowPicker {
             None => "No file selected".to_string(),
         };
 
-        self.view.label(ids!(path_row.path_container.path_label)).set_text(cx, &display_text);
+        self.view
+            .label(ids!(path_row.path_container.path_label))
+            .set_text(cx, &display_text);
         self.view.redraw(cx);
     }
 
     /// Set full path display (shows the complete path)
     pub fn set_path_display(&mut self, cx: &mut Cx, path: &str) {
-        self.view.label(ids!(path_row.path_container.path_label)).set_text(cx, path);
+        self.view
+            .label(ids!(path_row.path_container.path_label))
+            .set_text(cx, path);
         self.view.redraw(cx);
     }
 
     /// Set label text
     pub fn set_label(&mut self, cx: &mut Cx, label: &str) {
         self.label = label.to_string();
-        self.view.label(ids!(label_row.picker_label)).set_text(cx, label);
+        self.view
+            .label(ids!(label_row.picker_label))
+            .set_text(cx, label);
     }
 
     /// Set info text (shows below the path)
@@ -285,7 +295,9 @@ impl DataflowPicker {
         match info {
             Some(text) => {
                 self.view.view(ids!(info_row)).set_visible(cx, true);
-                self.view.label(ids!(info_row.info_label)).set_text(cx, text);
+                self.view
+                    .label(ids!(info_row.info_label))
+                    .set_text(cx, text);
             }
             None => {
                 self.view.view(ids!(info_row)).set_visible(cx, false);
@@ -309,28 +321,45 @@ impl DataflowPicker {
         self.dark_mode = dark_mode;
 
         // Label
-        self.view.label(ids!(label_row.picker_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(label_row.picker_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Path container
-        self.view.view(ids!(path_row.path_container)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.label(ids!(path_row.path_container.path_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.view(ids!(path_row.path_container)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .label(ids!(path_row.path_container.path_label))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                },
+            );
 
         // Browse button
-        self.view.button(ids!(path_row.browse_btn)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.button(ids!(path_row.browse_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Info label
-        self.view.label(ids!(info_row.info_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(info_row.info_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         self.view.redraw(cx);
     }
@@ -379,7 +408,9 @@ impl DataflowPickerRef {
 
     /// Check if file was selected
     pub fn selected(&self, actions: &Actions) -> Option<PathBuf> {
-        if let DataflowPickerAction::Selected(path) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let DataflowPickerAction::Selected(path) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(path)
         } else {
             None

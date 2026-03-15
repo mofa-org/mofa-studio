@@ -259,22 +259,28 @@ impl ChatPanel {
                 self.empty_text.clone()
             }
         } else {
-            messages.iter()
+            messages
+                .iter()
                 .map(|msg| {
                     let timestamp = ChatMessage::format_timestamp(msg.timestamp);
                     let streaming = if msg.is_streaming { " ⌛" } else { "" };
-                    format!("**{}**{} ({}):  \n{}", msg.sender, streaming, timestamp, msg.content)
+                    format!(
+                        "**{}**{} ({}):  \n{}",
+                        msg.sender, streaming, timestamp, msg.content
+                    )
                 })
                 .collect::<Vec<_>>()
                 .join("\n\n---\n\n")
         };
 
-        self.view.markdown(ids!(chat_scroll.content_wrapper.content))
+        self.view
+            .markdown(ids!(chat_scroll.content_wrapper.content))
             .set_text(cx, &text);
 
         // Auto-scroll to bottom on new messages
         if messages.len() > self.last_message_count {
-            self.view.view(ids!(chat_scroll))
+            self.view
+                .view(ids!(chat_scroll))
                 .set_scroll_pos(cx, DVec2 { x: 0.0, y: 1e10 });
             self.last_message_count = messages.len();
         }
@@ -290,7 +296,8 @@ impl ChatPanel {
         } else {
             &self.empty_text
         };
-        self.view.markdown(ids!(chat_scroll.content_wrapper.content))
+        self.view
+            .markdown(ids!(chat_scroll.content_wrapper.content))
             .set_text(cx, empty);
         self.view.redraw(cx);
     }
@@ -298,26 +305,41 @@ impl ChatPanel {
     /// Apply dark mode
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
-        self.view.apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(header)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.label(ids!(header.title)).apply_over(cx, live! {
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(header.copy_btn)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.view(ids!(header)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.label(ids!(header.title)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.view(ids!(header.copy_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
         self.view.redraw(cx);
     }
 
     /// Set copy button animation state (for feedback)
     pub fn set_copy_flash(&mut self, cx: &mut Cx, value: f64) {
-        self.view.view(ids!(header.copy_btn)).apply_over(cx, live! {
-            draw_bg: { copied: (value) }
-        });
+        self.view.view(ids!(header.copy_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { copied: (value) }
+            },
+        );
         self.view.redraw(cx);
     }
 
@@ -326,7 +348,8 @@ impl ChatPanel {
         if messages.is_empty() {
             "No chat messages".to_string()
         } else {
-            messages.iter()
+            messages
+                .iter()
                 .map(|msg| format!("[{}] {}", msg.sender, msg.content))
                 .collect::<Vec<_>>()
                 .join("\n\n")

@@ -274,15 +274,21 @@ impl Widget for ShellHeader {
         let theme_toggle = self.view.view(ids!(actions_slot.theme_toggle));
         match event.hits(cx, theme_toggle.area()) {
             Hit::FingerHoverIn(_) => {
-                self.view.view(ids!(actions_slot.theme_toggle)).apply_over(cx, live!{
-                    draw_bg: { hover: 1.0 }
-                });
+                self.view.view(ids!(actions_slot.theme_toggle)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 1.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             Hit::FingerHoverOut(_) => {
-                self.view.view(ids!(actions_slot.theme_toggle)).apply_over(cx, live!{
-                    draw_bg: { hover: 0.0 }
-                });
+                self.view.view(ids!(actions_slot.theme_toggle)).apply_over(
+                    cx,
+                    live! {
+                        draw_bg: { hover: 0.0 }
+                    },
+                );
                 self.view.redraw(cx);
             }
             Hit::FingerUp(_) => {
@@ -323,8 +329,12 @@ impl ShellHeader {
 
     /// Set dark mode (for theme toggle icon)
     pub fn set_dark_mode(&mut self, cx: &mut Cx, is_dark: bool) {
-        self.view.view(ids!(actions_slot.theme_toggle.sun_icon)).set_visible(cx, !is_dark);
-        self.view.view(ids!(actions_slot.theme_toggle.moon_icon)).set_visible(cx, is_dark);
+        self.view
+            .view(ids!(actions_slot.theme_toggle.sun_icon))
+            .set_visible(cx, !is_dark);
+        self.view
+            .view(ids!(actions_slot.theme_toggle.moon_icon))
+            .set_visible(cx, is_dark);
         self.view.redraw(cx);
     }
 
@@ -332,17 +342,26 @@ impl ShellHeader {
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
 
-        self.view.apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.view.view(ids!(hamburger)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.view(ids!(hamburger)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.view.label(ids!(title_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(title_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         self.view.redraw(cx);
     }
