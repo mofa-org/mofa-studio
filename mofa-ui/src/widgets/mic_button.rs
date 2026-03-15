@@ -136,11 +136,7 @@ impl Widget for MicButton {
         // Handle click
         match event.hits(cx, self.view.area()) {
             Hit::FingerUp(fe) if fe.is_over && fe.was_tap() => {
-                cx.widget_action(
-                    self.widget_uid(),
-                    &scope.path,
-                    MicButtonAction::Clicked,
-                );
+                cx.widget_action(self.widget_uid(), &scope.path, MicButtonAction::Clicked);
             }
             _ => {}
         }
@@ -178,26 +174,39 @@ impl MicButton {
     /// Apply dark mode
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
-        self.view.view(ids!(mic_icon_on)).icon(ids!(icon)).apply_over(cx, live! {
-            draw_icon: { dark_mode: (dark_mode) }
-        });
+        self.view
+            .view(ids!(mic_icon_on))
+            .icon(ids!(icon))
+            .apply_over(
+                cx,
+                live! {
+                    draw_icon: { dark_mode: (dark_mode) }
+                },
+            );
         self.view.redraw(cx);
     }
 
     /// Update display (icon visibility and shader)
     fn update_display(&mut self, cx: &mut Cx) {
-        self.view.view(ids!(mic_icon_on)).set_visible(cx, !self.muted);
-        self.view.view(ids!(mic_icon_off)).set_visible(cx, self.muted);
+        self.view
+            .view(ids!(mic_icon_on))
+            .set_visible(cx, !self.muted);
+        self.view
+            .view(ids!(mic_icon_off))
+            .set_visible(cx, self.muted);
         self.update_shader(cx);
     }
 
     /// Update shader instance variables
     fn update_shader(&mut self, cx: &mut Cx) {
-        self.view.apply_over(cx, live! {
-            draw_bg: {
-                recording: (if self.recording { 1.0 } else { 0.0 }),
-            }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: {
+                    recording: (if self.recording { 1.0 } else { 0.0 }),
+                }
+            },
+        );
         self.view.redraw(cx);
     }
 }

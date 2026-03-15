@@ -202,7 +202,10 @@ impl DataflowController {
         }
 
         // Execute
-        eprintln!("[Controller] Executing: dora start {:?} --detach", self.dataflow_path);
+        eprintln!(
+            "[Controller] Executing: dora start {:?} --detach",
+            self.dataflow_path
+        );
         info!("Starting dataflow: {:?}", self.dataflow_path);
         let output = cmd.output().map_err(|e| {
             eprintln!("[Controller] FAILED to execute dora: {}", e);

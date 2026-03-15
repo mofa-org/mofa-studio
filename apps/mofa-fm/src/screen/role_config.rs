@@ -8,8 +8,14 @@ use std::path::PathBuf;
 
 /// Available voice display names (shown in UI)
 pub const VOICE_OPTIONS: &[&str] = &[
-    "Zhao Daniu", "Chen Yifan", "Luo Xiang", "Doubao", "Yang Mi",
-    "Ma Yun", "BYS", "Marc",
+    "Zhao Daniu",
+    "Chen Yifan",
+    "Luo Xiang",
+    "Doubao",
+    "Yang Mi",
+    "Ma Yun",
+    "BYS",
+    "Marc",
 ];
 
 /// Map display name → VOICE_CHARACTER ID (used in voices.json / YAML env)
@@ -83,10 +89,11 @@ impl RoleConfig {
         let content = std::fs::read_to_string(path)
             .map_err(|e| format!("Failed to read config file: {}", e))?;
 
-        let config: TomlConfig = toml::from_str(&content)
-            .map_err(|e| format!("Failed to parse config file: {}", e))?;
+        let config: TomlConfig =
+            toml::from_str(&content).map_err(|e| format!("Failed to parse config file: {}", e))?;
 
-        let models = config.models
+        let models = config
+            .models
             .map(|m| m.into_iter().map(|model| model.id).collect())
             .unwrap_or_default();
 
@@ -102,7 +109,9 @@ impl RoleConfig {
     /// Save model, system prompt, and voice back to the TOML file
     /// Uses regex-based replacement to preserve file formatting and comments
     pub fn save(&self) -> Result<(), String> {
-        let path = self.config_path.as_ref()
+        let path = self
+            .config_path
+            .as_ref()
             .ok_or_else(|| "No config path set".to_string())?;
 
         let content = std::fs::read_to_string(path)
@@ -111,7 +120,10 @@ impl RoleConfig {
         // Update default_model using regex (single-line value)
         let model_re = Regex::new(r#"(?m)^default_model\s*=\s*"[^"]*""#)
             .map_err(|e| format!("Invalid regex: {}", e))?;
-        let content = model_re.replace(&content, format!(r#"default_model = "{}""#, self.default_model));
+        let content = model_re.replace(
+            &content,
+            format!(r#"default_model = "{}""#, self.default_model),
+        );
 
         // Update voice using regex (single-line value)
         let voice_re = Regex::new(r#"(?m)^voice\s*=\s*"[^"]*""#)
@@ -122,7 +134,10 @@ impl RoleConfig {
         // Match: system_prompt = """...""" (with newlines inside)
         let prompt_re = Regex::new(r#"(?ms)^system_prompt\s*=\s*""".*?""""#)
             .map_err(|e| format!("Invalid regex: {}", e))?;
-        let content = prompt_re.replace(&content, format!(r#"system_prompt = """{}""""#, self.system_prompt));
+        let content = prompt_re.replace(
+            &content,
+            format!(r#"system_prompt = """{}""""#, self.system_prompt),
+        );
 
         std::fs::write(path, content.as_ref())
             .map_err(|e| format!("Failed to write config file: {}", e))?;
@@ -162,8 +177,7 @@ pub fn update_yaml_voice(yaml_path: &PathBuf, role: &str, voice: &str) -> Result
 
     // Find the node section boundaries
     let node_pattern = format!(r"(?m)^  - id: {}\s*$", regex::escape(node_id));
-    let node_re = Regex::new(&node_pattern)
-        .map_err(|e| format!("Invalid regex: {}", e))?;
+    let node_re = Regex::new(&node_pattern).map_err(|e| format!("Invalid regex: {}", e))?;
 
     let node_match = match node_re.find(&content) {
         Some(m) => m,
@@ -173,10 +187,10 @@ pub fn update_yaml_voice(yaml_path: &PathBuf, role: &str, voice: &str) -> Result
     let node_start = node_match.start();
 
     // Find the end of this node (next "  - id:" or end of file)
-    let next_node_re = Regex::new(r"(?m)^  - id: ")
-        .map_err(|e| format!("Invalid regex: {}", e))?;
+    let next_node_re = Regex::new(r"(?m)^  - id: ").map_err(|e| format!("Invalid regex: {}", e))?;
 
-    let node_end = next_node_re.find_iter(&content[node_match.end()..])
+    let node_end = next_node_re
+        .find_iter(&content[node_match.end()..])
         .next()
         .map(|m| node_match.end() + m.start())
         .unwrap_or(content.len());
@@ -195,7 +209,10 @@ pub fn update_yaml_voice(yaml_path: &PathBuf, role: &str, voice: &str) -> Result
     } else if vn_re.is_match(node_section) {
         (vn_re, voice)
     } else {
-        return Err(format!("VOICE_CHARACTER/VOICE_NAME not found in {} section", node_id));
+        return Err(format!(
+            "VOICE_CHARACTER/VOICE_NAME not found in {} section",
+            node_id
+        ));
     };
 
     // Build replacement string: preserve prefix ($1) and add new quoted voice
@@ -241,7 +258,8 @@ pub fn read_yaml_voice(yaml_path: &PathBuf, role: &str) -> Option<String> {
 
     // Find the end of this node (next "  - id:" or end of file)
     let next_node_re = Regex::new(r"(?m)^  - id: ").ok()?;
-    let node_end = next_node_re.find_iter(&content[node_match.end()..])
+    let node_end = next_node_re
+        .find_iter(&content[node_match.end()..])
         .next()
         .map(|m| node_match.end() + m.start())
         .unwrap_or(content.len());
@@ -277,7 +295,11 @@ pub fn get_yaml_path(dataflow_path: Option<&PathBuf>) -> Option<PathBuf> {
     let cwd = std::env::current_dir().ok()?;
 
     // First try: apps/mofa-fm/dataflow/voice-chat.yml (workspace root)
-    let app_path = cwd.join("apps").join("mofa-fm").join("dataflow").join("voice-chat.yml");
+    let app_path = cwd
+        .join("apps")
+        .join("mofa-fm")
+        .join("dataflow")
+        .join("voice-chat.yml");
     if app_path.exists() {
         return Some(app_path);
     }
@@ -314,7 +336,11 @@ pub fn get_role_config_path(dataflow_path: Option<&PathBuf>, role: &str) -> Path
     let cwd = std::env::current_dir().unwrap_or_default();
 
     // First try: apps/mofa-fm/dataflow/ (workspace root)
-    let app_path = cwd.join("apps").join("mofa-fm").join("dataflow").join(config_name);
+    let app_path = cwd
+        .join("apps")
+        .join("mofa-fm")
+        .join("dataflow")
+        .join(config_name);
     if app_path.exists() {
         return app_path;
     }

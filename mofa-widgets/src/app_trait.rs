@@ -200,13 +200,16 @@ impl PageRouter {
 /// Helper to check if a specific tab was clicked using path-based detection
 /// This avoids WidgetUid mismatch issues with nested widgets
 pub fn tab_clicked(actions: &[Action], tab_id: LiveId) -> bool {
-    actions.iter().filter_map(|a| a.as_widget_action()).any(|wa| {
-        if let ButtonAction::Clicked(_) = wa.cast() {
-            wa.path.data.contains(&tab_id)
-        } else {
-            false
-        }
-    })
+    actions
+        .iter()
+        .filter_map(|a| a.as_widget_action())
+        .any(|wa| {
+            if let ButtonAction::Clicked(_) = wa.cast() {
+                wa.path.data.contains(&tab_id)
+            } else {
+                false
+            }
+        })
 }
 
 /// Trait for apps that integrate with MoFA Studio shell

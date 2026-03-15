@@ -458,10 +458,13 @@ impl Widget for RoleEditor {
 
             // Animate save button to green
             self.save_animation_active = true;
-            self.view.button(ids!(header.save_btn)).apply_over(cx, live!{
-                draw_bg: { saved: 1.0 }
-                text: "Saved"
-            });
+            self.view.button(ids!(header.save_btn)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { saved: 1.0 }
+                    text: "Saved"
+                },
+            );
             self.view.redraw(cx);
 
             // Reset after delay (handled by timer or next event)
@@ -504,12 +507,18 @@ impl RoleEditor {
     pub fn get_config(&self) -> RoleConfig {
         let model_dd = self.view.drop_down(ids!(model_row.model_dropdown));
         let voice_dd = self.view.drop_down(ids!(voice_row.voice_dropdown));
-        let prompt_input = self.view.text_input(ids!(prompt_container.prompt_scroll.prompt_wrapper.prompt_input));
+        let prompt_input = self.view.text_input(ids!(
+            prompt_container.prompt_scroll.prompt_wrapper.prompt_input
+        ));
 
-        let model = self.models.get(model_dd.selected_item())
+        let model = self
+            .models
+            .get(model_dd.selected_item())
             .cloned()
             .unwrap_or_default();
-        let voice = self.voices.get(voice_dd.selected_item())
+        let voice = self
+            .voices
+            .get(voice_dd.selected_item())
             .cloned()
             .unwrap_or_default();
 
@@ -529,32 +538,43 @@ impl RoleEditor {
     /// Set model options
     pub fn set_models(&mut self, cx: &mut Cx, models: &[String]) {
         self.models = models.to_vec();
-        self.view.drop_down(ids!(model_row.model_dropdown)).set_labels(cx, models.to_vec());
+        self.view
+            .drop_down(ids!(model_row.model_dropdown))
+            .set_labels(cx, models.to_vec());
     }
 
     /// Set voice options
     pub fn set_voices(&mut self, cx: &mut Cx, voices: &[String]) {
         self.voices = voices.to_vec();
-        self.view.drop_down(ids!(voice_row.voice_dropdown)).set_labels(cx, voices.to_vec());
+        self.view
+            .drop_down(ids!(voice_row.voice_dropdown))
+            .set_labels(cx, voices.to_vec());
     }
 
     /// Set selected model by name
     pub fn set_model(&mut self, cx: &mut Cx, model: &str) {
         if let Some(idx) = self.models.iter().position(|l| l == model) {
-            self.view.drop_down(ids!(model_row.model_dropdown)).set_selected_item(cx, idx);
+            self.view
+                .drop_down(ids!(model_row.model_dropdown))
+                .set_selected_item(cx, idx);
         }
     }
 
     /// Set selected voice by name
     pub fn set_voice(&mut self, cx: &mut Cx, voice: &str) {
         if let Some(idx) = self.voices.iter().position(|l| l == voice) {
-            self.view.drop_down(ids!(voice_row.voice_dropdown)).set_selected_item(cx, idx);
+            self.view
+                .drop_down(ids!(voice_row.voice_dropdown))
+                .set_selected_item(cx, idx);
         }
     }
 
     /// Set system prompt text
     pub fn set_system_prompt(&mut self, cx: &mut Cx, prompt: &str) {
-        self.view.text_input(ids!(prompt_container.prompt_scroll.prompt_wrapper.prompt_input))
+        self.view
+            .text_input(ids!(
+                prompt_container.prompt_scroll.prompt_wrapper.prompt_input
+            ))
             .set_text(cx, prompt);
     }
 
@@ -563,64 +583,102 @@ impl RoleEditor {
         self.dark_mode = dark_mode;
 
         // Main container
-        self.view.apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Header
-        self.view.label(ids!(header.role_title)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.button(ids!(header.save_btn)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(header.role_title)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.button(ids!(header.save_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Model row
-        self.view.label(ids!(model_row.model_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.drop_down(ids!(model_row.model_dropdown)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-            popup_menu: {
-                draw_bg: { dark_mode: (dark_mode) }
-                menu_item: {
+        self.view.label(ids!(model_row.model_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .drop_down(ids!(model_row.model_dropdown))
+            .apply_over(
+                cx,
+                live! {
                     draw_bg: { dark_mode: (dark_mode) }
                     draw_text: { dark_mode: (dark_mode) }
-                }
-            }
-        });
+                    popup_menu: {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        menu_item: {
+                            draw_bg: { dark_mode: (dark_mode) }
+                            draw_text: { dark_mode: (dark_mode) }
+                        }
+                    }
+                },
+            );
 
         // Voice row
-        self.view.label(ids!(voice_row.voice_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.drop_down(ids!(voice_row.voice_dropdown)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-            popup_menu: {
-                draw_bg: { dark_mode: (dark_mode) }
-                menu_item: {
+        self.view.label(ids!(voice_row.voice_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .drop_down(ids!(voice_row.voice_dropdown))
+            .apply_over(
+                cx,
+                live! {
                     draw_bg: { dark_mode: (dark_mode) }
                     draw_text: { dark_mode: (dark_mode) }
-                }
-            }
-        });
+                    popup_menu: {
+                        draw_bg: { dark_mode: (dark_mode) }
+                        menu_item: {
+                            draw_bg: { dark_mode: (dark_mode) }
+                            draw_text: { dark_mode: (dark_mode) }
+                        }
+                    }
+                },
+            );
 
         // Prompt label
-        self.view.label(ids!(prompt_label)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(prompt_label)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         // Prompt container
-        self.view.view(ids!(prompt_container)).apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.text_input(ids!(prompt_container.prompt_scroll.prompt_wrapper.prompt_input)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-            draw_cursor: { dark_mode: (dark_mode) }
-        });
+        self.view.view(ids!(prompt_container)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view
+            .text_input(ids!(
+                prompt_container.prompt_scroll.prompt_wrapper.prompt_input
+            ))
+            .apply_over(
+                cx,
+                live! {
+                    draw_text: { dark_mode: (dark_mode) }
+                    draw_cursor: { dark_mode: (dark_mode) }
+                },
+            );
 
         self.view.redraw(cx);
     }
@@ -629,10 +687,13 @@ impl RoleEditor {
     pub fn reset_save_button(&mut self, cx: &mut Cx) {
         if self.save_animation_active {
             self.save_animation_active = false;
-            self.view.button(ids!(header.save_btn)).apply_over(cx, live!{
-                draw_bg: { saved: 0.0 }
-                text: "Save"
-            });
+            self.view.button(ids!(header.save_btn)).apply_over(
+                cx,
+                live! {
+                    draw_bg: { saved: 0.0 }
+                    text: "Save"
+                },
+            );
             self.view.redraw(cx);
         }
     }
@@ -641,7 +702,9 @@ impl RoleEditor {
 impl RoleEditorRef {
     /// Get current configuration
     pub fn get_config(&self) -> RoleConfig {
-        self.borrow().map(|inner| inner.get_config()).unwrap_or_default()
+        self.borrow()
+            .map(|inner| inner.get_config())
+            .unwrap_or_default()
     }
 
     /// Set role title
@@ -702,7 +765,9 @@ impl RoleEditorRef {
 
     /// Check if saved action was triggered
     pub fn saved(&self, actions: &Actions) -> Option<RoleConfig> {
-        if let RoleEditorAction::Saved(config) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let RoleEditorAction::Saved(config) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(config)
         } else {
             None
@@ -711,7 +776,9 @@ impl RoleEditorRef {
 
     /// Check if model changed
     pub fn model_changed(&self, actions: &Actions) -> Option<String> {
-        if let RoleEditorAction::ModelChanged(model) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let RoleEditorAction::ModelChanged(model) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(model)
         } else {
             None
@@ -720,7 +787,9 @@ impl RoleEditorRef {
 
     /// Check if voice changed
     pub fn voice_changed(&self, actions: &Actions) -> Option<String> {
-        if let RoleEditorAction::VoiceChanged(voice) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let RoleEditorAction::VoiceChanged(voice) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(voice)
         } else {
             None

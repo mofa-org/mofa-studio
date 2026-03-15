@@ -8,7 +8,7 @@ pub mod screen;
 
 pub use screen::SettingsScreenRef;
 
-use makepad_widgets::{Cx, live_id, LiveId};
+use makepad_widgets::{live_id, Cx, LiveId};
 use mofa_widgets::{AppInfo, MofaApp};
 
 /// MoFA Settings app descriptor

@@ -202,17 +202,24 @@ impl StatusBar {
     pub fn set_status(&mut self, cx: &mut Cx, status: ConnectionStatus) {
         self.status = status;
 
-        self.view.view(ids!(left_section.status_dot)).apply_over(cx, live!{
-            draw_bg: { status: (status.as_f64()) }
-        });
+        self.view.view(ids!(left_section.status_dot)).apply_over(
+            cx,
+            live! {
+                draw_bg: { status: (status.as_f64()) }
+            },
+        );
 
-        self.view.label(ids!(left_section.status_text)).set_text(cx, status.label());
+        self.view
+            .label(ids!(left_section.status_text))
+            .set_text(cx, status.label());
         self.view.redraw(cx);
     }
 
     /// Set info text (right section)
     pub fn set_info(&mut self, cx: &mut Cx, text: &str) {
-        self.view.label(ids!(right_section.info_text)).set_text(cx, text);
+        self.view
+            .label(ids!(right_section.info_text))
+            .set_text(cx, text);
         self.view.redraw(cx);
     }
 
@@ -220,17 +227,26 @@ impl StatusBar {
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
 
-        self.view.apply_over(cx, live!{
-            draw_bg: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.view.label(ids!(left_section.status_text)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(left_section.status_text)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
-        self.view.label(ids!(right_section.info_text)).apply_over(cx, live!{
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.label(ids!(right_section.info_text)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
 
         self.view.redraw(cx);
     }

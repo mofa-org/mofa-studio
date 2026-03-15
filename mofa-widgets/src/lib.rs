@@ -83,7 +83,10 @@ pub mod theme;
 pub mod waveform_view;
 
 // Re-export app trait types for convenience
-pub use app_trait::{AppInfo, AppRegistry, MofaApp, PageId, PageRouter, StateChangeListener, TimerControl, tab_clicked};
+pub use app_trait::{
+    tab_clicked, AppInfo, AppRegistry, MofaApp, PageId, PageRouter, StateChangeListener,
+    TimerControl,
+};
 
 use makepad_widgets::Cx;
 

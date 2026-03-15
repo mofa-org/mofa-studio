@@ -95,18 +95,17 @@ impl ChatViewerBridge {
     ) {
         info!("Starting chat viewer bridge event loop for {}", node_id);
 
-        let (_node, mut events) =
-            match DoraNode::init_from_node_id(NodeId::from(node_id.clone())) {
-                Ok(n) => n,
-                Err(e) => {
-                    error!("Failed to init dora node {}: {}", node_id, e);
-                    *state.write() = BridgeState::Error;
-                    if let Some(ref ss) = shared_state {
-                        ss.set_error(Some(format!("ChatViewer init failed: {}", e)));
-                    }
-                    return;
+        let (_node, mut events) = match DoraNode::init_from_node_id(NodeId::from(node_id.clone())) {
+            Ok(n) => n,
+            Err(e) => {
+                error!("Failed to init dora node {}: {}", node_id, e);
+                *state.write() = BridgeState::Error;
+                if let Some(ref ss) = shared_state {
+                    ss.set_error(Some(format!("ChatViewer init failed: {}", e)));
                 }
-            };
+                return;
+            }
+        };
 
         *state.write() = BridgeState::Connected;
         if let Some(ref ss) = shared_state {
@@ -137,11 +136,7 @@ impl ChatViewerBridge {
     }
 
     /// Handle a single Dora event.
-    fn handle_dora_event(
-        event: Event,
-        shared_state: Option<&Arc<SharedDoraState>>,
-        node_id: &str,
-    ) {
+    fn handle_dora_event(event: Event, shared_state: Option<&Arc<SharedDoraState>>, node_id: &str) {
         match event {
             Event::Input { id, data, metadata } => {
                 let input_id = id.as_str();
@@ -240,10 +235,7 @@ impl ChatViewerBridge {
             _ => MessageRole::Assistant,
         };
 
-        let sender = metadata
-            .participant_id()
-            .unwrap_or(source)
-            .to_string();
+        let sender = metadata.participant_id().unwrap_or(source).to_string();
 
         let is_streaming = metadata
             .get("is_streaming")
@@ -286,10 +278,7 @@ impl ChatViewerBridge {
                 }
             }
             arrow::datatypes::DataType::UInt8 => {
-                let array = data
-                    .0
-                    .as_any()
-                    .downcast_ref::<arrow::array::UInt8Array>()?;
+                let array = data.0.as_any().downcast_ref::<arrow::array::UInt8Array>()?;
                 let bytes: Vec<u8> = array.values().to_vec();
                 return String::from_utf8(bytes).ok();
             }
@@ -394,7 +383,8 @@ mod tests {
     #[test]
     fn test_parse_json_full() {
         let meta = EventMetadata::default();
-        let json = r#"{"content":"Hi there","sender":"Bot","role":"assistant","is_streaming":false}"#;
+        let json =
+            r#"{"content":"Hi there","sender":"Bot","role":"assistant","is_streaming":false}"#;
         let msg = ChatViewerBridge::parse_message(json, "node", &meta);
         assert_eq!(msg.content, "Hi there");
         assert_eq!(msg.sender, "Bot");

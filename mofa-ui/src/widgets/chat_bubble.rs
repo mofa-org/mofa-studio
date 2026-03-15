@@ -403,7 +403,10 @@ impl ChatBubble {
             .set_text(cx, &sender_text);
         self.view
             .label(ids!(row.bubble_wrap.bubble.sender_label))
-            .apply_over(cx, live! { draw_text: { role: (role_val), dark_mode: (dark) } });
+            .apply_over(
+                cx,
+                live! { draw_text: { role: (role_val), dark_mode: (dark) } },
+            );
 
         // Content label
         self.view
@@ -411,7 +414,10 @@ impl ChatBubble {
             .set_text(cx, &msg.content);
         self.view
             .label(ids!(row.bubble_wrap.bubble.content_label))
-            .apply_over(cx, live! { draw_text: { role: (role_val), dark_mode: (dark) } });
+            .apply_over(
+                cx,
+                live! { draw_text: { role: (role_val), dark_mode: (dark) } },
+            );
 
         // Timestamp label
         let ts = msg.format_time();
@@ -420,12 +426,16 @@ impl ChatBubble {
             .set_text(cx, &ts);
         self.view
             .label(ids!(row.bubble_wrap.bubble.timestamp_label))
-            .apply_over(cx, live! { draw_text: { role: (role_val), dark_mode: (dark) } });
+            .apply_over(
+                cx,
+                live! { draw_text: { role: (role_val), dark_mode: (dark) } },
+            );
 
         // Bubble background
-        self.view
-            .view(ids!(row.bubble_wrap.bubble))
-            .apply_over(cx, live! { draw_bg: { role: (role_val), dark_mode: (dark) } });
+        self.view.view(ids!(row.bubble_wrap.bubble)).apply_over(
+            cx,
+            live! { draw_bg: { role: (role_val), dark_mode: (dark) } },
+        );
 
         // Alignment: user → right (push spacer_left), assistant/system → left
         let (left_fill, right_fill): (f64, f64) = if msg.role.is_right_aligned() {
@@ -540,15 +550,24 @@ impl ChatBubblePanel {
     /// Apply dark/light mode.
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
-        self.view.apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.view(ids!(header)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.label(ids!(header.title)).apply_over(cx, live! {
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.view(ids!(header)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.label(ids!(header.title)).apply_over(
+            cx,
+            live! {
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
         self.view.redraw(cx);
     }
 
@@ -578,7 +597,8 @@ impl ChatBubblePanelRef {
     }
 
     pub fn message_count(&self) -> usize {
-        self.borrow().map(|inner| inner.message_count()).unwrap_or(0)
+        self.borrow()
+            .map(|inner| inner.message_count())
+            .unwrap_or(0)
     }
 }
-

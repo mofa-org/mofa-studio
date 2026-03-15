@@ -229,28 +229,41 @@ impl ChatInput {
 
     /// Set text
     pub fn set_text(&mut self, cx: &mut Cx, text: &str) {
-        self.view.text_input(ids!(input_row.text_input)).set_text(cx, text);
+        self.view
+            .text_input(ids!(input_row.text_input))
+            .set_text(cx, text);
     }
 
     /// Clear input
     pub fn clear(&mut self, cx: &mut Cx) {
-        self.view.text_input(ids!(input_row.text_input)).set_text(cx, "");
+        self.view
+            .text_input(ids!(input_row.text_input))
+            .set_text(cx, "");
     }
 
     /// Apply dark mode
     pub fn apply_dark_mode(&mut self, cx: &mut Cx, dark_mode: f64) {
         self.dark_mode = dark_mode;
-        self.view.apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-        });
-        self.view.text_input(ids!(input_row.text_input)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-        });
-        self.view.button(ids!(input_row.send_btn)).apply_over(cx, live! {
-            draw_bg: { dark_mode: (dark_mode) }
-            draw_text: { dark_mode: (dark_mode) }
-        });
+        self.view.apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.text_input(ids!(input_row.text_input)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
+        self.view.button(ids!(input_row.send_btn)).apply_over(
+            cx,
+            live! {
+                draw_bg: { dark_mode: (dark_mode) }
+                draw_text: { dark_mode: (dark_mode) }
+            },
+        );
         self.view.redraw(cx);
     }
 }
@@ -284,7 +297,9 @@ impl ChatInputRef {
 
     /// Check if input was submitted, returns the submitted text
     pub fn submitted(&self, actions: &Actions) -> Option<String> {
-        if let ChatInputAction::Submitted(text) = actions.find_widget_action(self.widget_uid()).cast() {
+        if let ChatInputAction::Submitted(text) =
+            actions.find_widget_action(self.widget_uid()).cast()
+        {
             Some(text)
         } else {
             None

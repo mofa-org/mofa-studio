@@ -16,12 +16,8 @@ mod log_panel;
 use crate::dora_integration::{DoraCommand, DoraIntegration};
 use makepad_widgets::*;
 use mofa_ui::{
+    log_bridge, AecButtonWidgetExt, AudioManager, LedMeterWidgetExt, MicButtonWidgetExt,
     MofaHeroAction, MofaHeroWidgetExt,
-    MicButtonWidgetExt,
-    AecButtonWidgetExt,
-    LedMeterWidgetExt,
-    AudioManager,
-    log_bridge,
 };
 use mofa_widgets::participant_panel::ParticipantPanelWidgetExt;
 use mofa_widgets::{StateChangeListener, TimerControl};
@@ -298,7 +294,10 @@ impl Widget for MoFaDebateScreen {
         };
 
         // Handle MofaHero start/stop — scoped to this screen's hero widget only
-        let hero_uid = self.view.mofa_hero(ids!(left_column.mofa_hero)).widget_uid();
+        let hero_uid = self
+            .view
+            .mofa_hero(ids!(left_column.mofa_hero))
+            .widget_uid();
         match actions.find_widget_action_cast::<MofaHeroAction>(hero_uid) {
             MofaHeroAction::StartClicked => {
                 ::log::info!("Screen received StartClicked action");
@@ -312,14 +311,18 @@ impl Widget for MoFaDebateScreen {
         }
 
         // Handle mic button click (using shared MicButton widget)
-        let mic_btn = self.view.mic_button(ids!(audio_container.mic_container.mic_group.mic_mute_btn));
+        let mic_btn = self
+            .view
+            .mic_button(ids!(audio_container.mic_container.mic_group.mic_mute_btn));
         if mic_btn.clicked(actions) {
             self.mic_muted = !self.mic_muted;
             mic_btn.set_muted(cx, self.mic_muted);
         }
 
         // Handle AEC button click (using shared AecButton widget)
-        let aec_btn = self.view.aec_button(ids!(audio_container.aec_container.aec_group.aec_toggle_btn));
+        let aec_btn = self
+            .view
+            .aec_button(ids!(audio_container.aec_container.aec_group.aec_toggle_btn));
         if aec_btn.clicked(actions) {
             self.aec_enabled = !self.aec_enabled;
             aec_btn.set_enabled(cx, self.aec_enabled);
@@ -707,17 +710,35 @@ impl StateChangeListener for MoFaDebateScreenRef {
             // Apply dark mode to mic button (using shared MicButton widget)
             inner
                 .view
-                .mic_button(ids!(left_column.audio_container.mic_container.mic_group.mic_mute_btn))
+                .mic_button(ids!(
+                    left_column
+                        .audio_container
+                        .mic_container
+                        .mic_group
+                        .mic_mute_btn
+                ))
                 .apply_dark_mode(cx, dark_mode);
 
             // Apply dark mode to LED meters (using shared LedMeter widget)
             inner
                 .view
-                .led_meter(ids!(left_column.audio_container.mic_container.mic_group.mic_level_meter))
+                .led_meter(ids!(
+                    left_column
+                        .audio_container
+                        .mic_container
+                        .mic_group
+                        .mic_level_meter
+                ))
                 .apply_dark_mode(cx, dark_mode);
             inner
                 .view
-                .led_meter(ids!(left_column.audio_container.buffer_container.buffer_group.buffer_meter))
+                .led_meter(ids!(
+                    left_column
+                        .audio_container
+                        .buffer_container
+                        .buffer_group
+                        .buffer_meter
+                ))
                 .apply_dark_mode(cx, dark_mode);
             inner
                 .view

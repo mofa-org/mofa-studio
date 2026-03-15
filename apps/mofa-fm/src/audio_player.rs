@@ -303,7 +303,8 @@ impl AudioPlayer {
         let force_mute_clone = Arc::clone(&force_mute);
 
         std::thread::spawn(move || {
-            if let Err(e) = run_audio_thread(sample_rate, command_rx, state_clone, force_mute_clone) {
+            if let Err(e) = run_audio_thread(sample_rate, command_rx, state_clone, force_mute_clone)
+            {
                 log::error!("Audio thread error: {}", e);
             }
         });

@@ -236,8 +236,14 @@ mod tests {
     fn test_generate_id() {
         assert_eq!(Provider::generate_id("OpenAI"), "openai");
         assert_eq!(Provider::generate_id("Deep Seek"), "deep_seek");
-        assert_eq!(Provider::generate_id("Alibaba Cloud (Qwen)"), "alibaba_cloud__qwen_");
-        assert_eq!(Provider::generate_id("My-Custom-Provider"), "my_custom_provider");
+        assert_eq!(
+            Provider::generate_id("Alibaba Cloud (Qwen)"),
+            "alibaba_cloud__qwen_"
+        );
+        assert_eq!(
+            Provider::generate_id("My-Custom-Provider"),
+            "my_custom_provider"
+        );
         assert_eq!(Provider::generate_id("Test123"), "test123");
     }
 
@@ -317,7 +323,9 @@ mod tests {
         assert_eq!(nvidia.name, "NVIDIA");
         assert_eq!(nvidia.provider_type, ProviderType::Nvidia);
         assert_eq!(nvidia.url, "https://integrate.api.nvidia.com/v1");
-        assert!(nvidia.models.contains(&"deepseek-ai/deepseek-r1".to_string()));
+        assert!(nvidia
+            .models
+            .contains(&"deepseek-ai/deepseek-r1".to_string()));
     }
 
     #[test]
@@ -332,6 +340,9 @@ mod tests {
         assert!(!provider.enabled);
         assert!(provider.models.is_empty());
         assert!(!provider.is_custom);
-        assert_eq!(provider.connection_status, ProviderConnectionStatus::Disconnected);
+        assert_eq!(
+            provider.connection_status,
+            ProviderConnectionStatus::Disconnected
+        );
     }
 }

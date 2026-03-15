@@ -169,8 +169,12 @@ mod tests {
     #[test]
     fn test_get_provider() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("provider1", false, true));
-        prefs.providers.push(create_test_provider("provider2", true, false));
+        prefs
+            .providers
+            .push(create_test_provider("provider1", false, true));
+        prefs
+            .providers
+            .push(create_test_provider("provider2", true, false));
 
         // Found
         let found = prefs.get_provider("provider1");
@@ -184,7 +188,9 @@ mod tests {
     #[test]
     fn test_get_provider_mut() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("provider1", false, false));
+        prefs
+            .providers
+            .push(create_test_provider("provider1", false, false));
 
         // Modify provider
         if let Some(provider) = prefs.get_provider_mut("provider1") {
@@ -212,7 +218,9 @@ mod tests {
     #[test]
     fn test_upsert_provider_update() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("existing", false, false));
+        prefs
+            .providers
+            .push(create_test_provider("existing", false, false));
 
         // Update with new data
         let mut updated = create_test_provider("existing", false, true);
@@ -228,8 +236,12 @@ mod tests {
     #[test]
     fn test_remove_provider_custom() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("custom1", true, false));
-        prefs.providers.push(create_test_provider("builtin1", false, false));
+        prefs
+            .providers
+            .push(create_test_provider("custom1", true, false));
+        prefs
+            .providers
+            .push(create_test_provider("builtin1", false, false));
 
         // Remove custom provider - should succeed
         assert!(prefs.remove_provider("custom1"));
@@ -240,7 +252,9 @@ mod tests {
     #[test]
     fn test_remove_provider_builtin() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("builtin1", false, false));
+        prefs
+            .providers
+            .push(create_test_provider("builtin1", false, false));
 
         // Cannot remove non-custom provider
         assert!(!prefs.remove_provider("builtin1"));
@@ -258,10 +272,18 @@ mod tests {
     #[test]
     fn test_get_enabled_providers() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("enabled1", false, true));
-        prefs.providers.push(create_test_provider("disabled1", false, false));
-        prefs.providers.push(create_test_provider("enabled2", true, true));
-        prefs.providers.push(create_test_provider("disabled2", true, false));
+        prefs
+            .providers
+            .push(create_test_provider("enabled1", false, true));
+        prefs
+            .providers
+            .push(create_test_provider("disabled1", false, false));
+        prefs
+            .providers
+            .push(create_test_provider("enabled2", true, true));
+        prefs
+            .providers
+            .push(create_test_provider("disabled2", true, false));
 
         let enabled = prefs.get_enabled_providers();
         assert_eq!(enabled.len(), 2);
@@ -273,7 +295,9 @@ mod tests {
     fn test_merge_with_supported_providers() {
         let mut prefs = Preferences::default();
         // Start with one custom provider
-        prefs.providers.push(create_test_provider("my_custom", true, true));
+        prefs
+            .providers
+            .push(create_test_provider("my_custom", true, true));
 
         // Merge should add all supported providers
         prefs.merge_with_supported_providers();
@@ -302,7 +326,9 @@ mod tests {
     #[test]
     fn test_serialization_roundtrip() {
         let mut prefs = Preferences::default();
-        prefs.providers.push(create_test_provider("test", true, true));
+        prefs
+            .providers
+            .push(create_test_provider("test", true, true));
         prefs.default_chat_provider = Some("test".to_string());
         prefs.dark_mode = true;
         prefs.audio_input_device = Some("Microphone".to_string());
