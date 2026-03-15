@@ -120,6 +120,9 @@ pub use widgets::{
     MicButton, MicButtonRef, MicButtonWidgetExt, MicButtonAction,
     AecButton, AecButtonRef, AecButtonWidgetExt, AecButtonAction,
     // Chat widgets (Phase 3)
+    ChatBubble, ChatBubbleRef, ChatBubbleWidgetExt,
+    ChatBubblePanel, ChatBubblePanelRef, ChatBubblePanelWidgetExt, ChatBubblePanelAction,
+    UiChatMessage, UiMessageRole,
     ChatPanel, ChatPanelRef, ChatPanelWidgetExt, ChatPanelAction, ChatMessage,
     ChatInput, ChatInputRef, ChatInputWidgetExt, ChatInputAction,
     MofaLogPanel, MofaLogPanelRef, MofaLogPanelWidgetExt, LogPanelAction, LogLevel, LogNode,
@@ -200,6 +203,15 @@ pub fn create_default_registry() -> MofaWidgetRegistry {
 
     // Register chat widgets (Phase 3)
     registry.register(
+        MofaWidgetDef::new("chat_bubble", "Chat Bubble", WidgetCategory::Chat)
+            .description("Role-aware chat message bubble (User/Assistant/System)")
+    );
+    registry.register(
+        MofaWidgetDef::new("chat_bubble_panel", "Chat Bubble Panel", WidgetCategory::Chat)
+            .requires_dora(true)
+            .description("Scrollable role-aware conversation panel with auto-scroll")
+    );
+    registry.register(
         MofaWidgetDef::new("chat_panel", "Chat Panel", WidgetCategory::Chat)
             .description("Chat message display with markdown support")
     );
@@ -255,12 +267,14 @@ mod tests {
     fn test_create_default_registry() {
         let registry = create_default_registry();
         // Should have audio, chat, config, and shell widgets registered
-        assert_eq!(registry.len(), 13);
+        assert_eq!(registry.len(), 15);
         // Audio widgets (Phase 2)
         assert!(registry.contains("led_meter"));
         assert!(registry.contains("mic_button"));
         assert!(registry.contains("aec_button"));
         // Chat widgets (Phase 3)
+        assert!(registry.contains("chat_bubble"));
+        assert!(registry.contains("chat_bubble_panel"));
         assert!(registry.contains("chat_panel"));
         assert!(registry.contains("chat_input"));
         assert!(registry.contains("log_panel"));

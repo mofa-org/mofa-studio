@@ -56,6 +56,7 @@ pub mod mic_button;
 pub mod aec_button;
 
 // Phase 3 - Chat widgets
+pub mod chat_bubble;
 pub mod chat_panel;
 pub mod chat_input;
 pub mod log_panel;
@@ -74,6 +75,11 @@ pub use mic_button::{MicButton, MicButtonRef, MicButtonWidgetExt, MicButtonActio
 pub use aec_button::{AecButton, AecButtonRef, AecButtonWidgetExt, AecButtonAction};
 
 // Re-export Phase 3 widgets
+pub use chat_bubble::{
+    ChatBubble, ChatBubbleRef, ChatBubbleWidgetExt,
+    ChatBubblePanel, ChatBubblePanelRef, ChatBubblePanelWidgetExt, ChatBubblePanelAction,
+    UiChatMessage, UiMessageRole,
+};
 pub use chat_panel::{ChatPanel, ChatPanelRef, ChatPanelWidgetExt, ChatPanelAction, ChatMessage};
 pub use chat_input::{ChatInput, ChatInputRef, ChatInputWidgetExt, ChatInputAction};
 pub use log_panel::{MofaLogPanel, MofaLogPanelRef, MofaLogPanelWidgetExt, LogPanelAction, LogLevel, LogNode};
