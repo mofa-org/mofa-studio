@@ -291,7 +291,7 @@ impl App {
 
         // Check widget count
         let count = registry.len();
-        let expected = 13;
+        let expected = 15;
         self.test_results.push((
             "Registry widget count".to_string(),
             count == expected,
@@ -305,11 +305,12 @@ impl App {
             "led_meter, mic_button, aec_button".to_string(),
         ));
 
-        // Check chat widgets
+        // Check chat widgets (includes new chat bubble widgets)
         self.test_results.push((
             "Chat widgets registered".to_string(),
-            registry.contains("chat_panel") && registry.contains("chat_input") && registry.contains("log_panel"),
-            "chat_panel, chat_input, log_panel".to_string(),
+            registry.contains("chat_panel") && registry.contains("chat_input") && registry.contains("log_panel")
+                && registry.contains("chat_bubble") && registry.contains("chat_bubble_panel"),
+            "chat_panel, chat_input, log_panel, chat_bubble, chat_bubble_panel".to_string(),
         ));
 
         // Check config widgets
