@@ -26,6 +26,9 @@ jobs:
             libxkbcommon-dev \
             libxi-dev \
             libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
             pkg-config
 
       - name: Install Rust toolchain
@@ -69,6 +72,9 @@ jobs:
             libxkbcommon-dev \
             libxi-dev \
             libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
             pkg-config
 
       - name: Install Rust toolchain
@@ -105,6 +111,9 @@ jobs:
             libxkbcommon-dev \
             libxi-dev \
             libgl1-mesa-dev \
+            libxcursor-dev \
+            libx11-dev \
+            libpulse-dev \
             pkg-config
 
       - name: Install Rust toolchain
