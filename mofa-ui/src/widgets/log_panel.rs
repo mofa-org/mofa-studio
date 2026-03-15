@@ -390,7 +390,7 @@ impl Widget for MofaLogPanel {
 
 impl MofaLogPanel {
     /// Add a log entry
-    pub fn add_log(&mut self, cx: &mut Cx, entry: &str) {
+    pub fn add_log(&mut self, _cx: &mut Cx, entry: &str) {
         self.entries.push(entry.to_string());
 
         // Prune oldest entries if over limit

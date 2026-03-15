@@ -193,13 +193,13 @@ pub struct ShellSidebar {
     #[rust]
     selected_id: Option<String>,
 
-    /// Registered navigation items
+    /// Registered navigation items (reserved for future sidebar population)
     #[rust]
-    nav_items: Vec<SidebarItem>,
+    _nav_items: Vec<SidebarItem>,
 
-    /// Registered settings items
+    /// Registered settings items (reserved for future sidebar population)
     #[rust]
-    settings_items: Vec<SidebarItem>,
+    _settings_items: Vec<SidebarItem>,
 }
 
 impl Widget for ShellSidebar {
