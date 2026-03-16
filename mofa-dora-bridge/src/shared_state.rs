@@ -97,7 +97,7 @@ use crate::data::{AudioData, ChatMessage, LogEntry};
 /// assert_eq!(vec.read_all(), vec![2, 3, 4]);
 /// ```
 pub struct DirtyVec<T> {
-    data: RwLock<Vec<T>>,
+    data: RwLock<VecDeque<T>>,
     dirty: AtomicBool,
     max_size: usize,
 }
@@ -105,7 +105,7 @@ pub struct DirtyVec<T> {
 impl<T: Clone> DirtyVec<T> {
     pub fn new(max_size: usize) -> Self {
         Self {
-            data: RwLock::new(Vec::new()),
+            data: RwLock::new(VecDeque::new()),
             dirty: AtomicBool::new(false),
             max_size,
         }
@@ -114,9 +114,9 @@ impl<T: Clone> DirtyVec<T> {
     /// Push item, mark dirty, enforce max size
     pub fn push(&self, item: T) {
         let mut data = self.data.write();
-        data.push(item);
+        data.push_back(item);
         if data.len() > self.max_size {
-            data.remove(0);
+            data.pop_front();
         }
         self.dirty.store(true, Ordering::Release);
     }
@@ -124,7 +124,7 @@ impl<T: Clone> DirtyVec<T> {
     /// Read all data if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<Vec<T>> {
         if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
+            Some(self.data.read().iter().cloned().collect())
         } else {
             None
         }
@@ -132,7 +132,7 @@ impl<T: Clone> DirtyVec<T> {
 
     /// Read all data unconditionally
     pub fn read_all(&self) -> Vec<T> {
-        self.data.read().clone()
+        self.data.read().iter().cloned().collect()
     }
 
     /// Clear all data
@@ -243,7 +243,7 @@ impl<T: Default> Default for DirtyValue<T> {
 /// Messages without `session_id` are never consolidated, even from the same sender.
 /// This is a safety feature to prevent accidental merging.
 pub struct ChatState {
-    messages: RwLock<Vec<ChatMessage>>,
+    messages: RwLock<VecDeque<ChatMessage>>,
     dirty: AtomicBool,
     max_messages: usize,
 }
@@ -251,7 +251,7 @@ pub struct ChatState {
 impl ChatState {
     pub fn new(max_messages: usize) -> Self {
         Self {
-            messages: RwLock::new(Vec::new()),
+            messages: RwLock::new(VecDeque::new()),
             dirty: AtomicBool::new(false),
             max_messages,
         }
@@ -284,11 +284,11 @@ impl ChatState {
             }
         } else {
             // New message
-            messages.push(msg);
+            messages.push_back(msg);
 
             // Enforce max size
             if messages.len() > self.max_messages {
-                messages.remove(0);
+                messages.pop_front();
             }
         }
 
@@ -298,7 +298,7 @@ impl ChatState {
     /// Read all messages if dirty
     pub fn read_if_dirty(&self) -> Option<Vec<ChatMessage>> {
         if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.messages.read().clone())
+            Some(self.messages.read().iter().cloned().collect())
         } else {
             None
         }
@@ -306,7 +306,7 @@ impl ChatState {
 
     /// Read all messages unconditionally
     pub fn read_all(&self) -> Vec<ChatMessage> {
-        self.messages.read().clone()
+        self.messages.read().iter().cloned().collect()
     }
 
     /// Clear all messages
