@@ -49,7 +49,10 @@ fn main() -> Result<()> {
         let start = Instant::now();
         match ParaformerEngine::new(&config.model_dir) {
             Ok(e) => {
-                log::info!("Engine initialized in {:.2}s", start.elapsed().as_secs_f32());
+                log::info!(
+                    "Engine initialized in {:.2}s",
+                    start.elapsed().as_secs_f32()
+                );
                 Some(e)
             }
             Err(e) => {
@@ -100,32 +103,43 @@ fn main() -> Result<()> {
                             }
                         }
 
-                        let engine = engine.as_mut().unwrap();
+                        let engine = match engine.as_mut() {
+                            Some(e) => e,
+                            None => {
+                                log::error!("ASR engine not available, skipping audio frame");
+                                send_log(
+                                    &mut node,
+                                    "ERROR",
+                                    "ASR engine not available, skipping audio frame",
+                                )?;
+                                continue;
+                            }
+                        };
 
                         // Extract metadata
-                        let question_id = metadata
-                            .parameters
-                            .get("question_id")
-                            .and_then(|p| match p {
-                                Parameter::String(s) => s.parse::<u64>().ok(),
-                                Parameter::Integer(i) => Some(*i as u64),
-                                _ => None,
-                            });
+                        let question_id =
+                            metadata
+                                .parameters
+                                .get("question_id")
+                                .and_then(|p| match p {
+                                    Parameter::String(s) => s.parse::<u64>().ok(),
+                                    Parameter::Integer(i) => Some(*i as u64),
+                                    _ => None,
+                                });
                         let segment = metadata.parameters.get("segment").and_then(|p| match p {
                             Parameter::String(s) => s.parse::<u64>().ok(),
                             Parameter::Integer(i) => Some(*i as u64),
                             _ => None,
                         });
-                        let sample_rate =
-                            metadata
-                                .parameters
-                                .get("sample_rate")
-                                .and_then(|p| match p {
-                                    Parameter::String(s) => s.parse::<u32>().ok(),
-                                    Parameter::Integer(i) => Some(*i as u32),
-                                    _ => None,
-                                })
-                                .unwrap_or(16000);
+                        let sample_rate = metadata
+                            .parameters
+                            .get("sample_rate")
+                            .and_then(|p| match p {
+                                Parameter::String(s) => s.parse::<u32>().ok(),
+                                Parameter::Integer(i) => Some(*i as u32),
+                                _ => None,
+                            })
+                            .unwrap_or(16000);
 
                         // Convert Arrow data to f32 samples
                         let samples = match extract_audio_samples(&data) {
@@ -256,7 +270,10 @@ fn process_audio(
     // Build output metadata
     let mut metadata: BTreeMap<String, Parameter> = BTreeMap::new();
     if let Some(qid) = question_id {
-        metadata.insert("question_id".to_string(), Parameter::String(qid.to_string()));
+        metadata.insert(
+            "question_id".to_string(),
+            Parameter::String(qid.to_string()),
+        );
     }
     if let Some(seg) = segment {
         metadata.insert("segment".to_string(), Parameter::String(seg.to_string()));
@@ -329,7 +346,11 @@ fn handle_control_command(
             send_log(node, "INFO", &format!("Stats: {}", stats))?;
         }
         "cleanup" | "reset" => {
-            send_log(node, "INFO", "Engine reset (no-op for stateless Paraformer)")?;
+            send_log(
+                node,
+                "INFO",
+                "Engine reset (no-op for stateless Paraformer)",
+            )?;
         }
         _ => {
             log::warn!("Unknown control command: {}", command);
