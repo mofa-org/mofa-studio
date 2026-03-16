@@ -23,6 +23,7 @@ use crate::dora_integration::{DoraIntegration, DoraCommand};
 use mofa_widgets::participant_panel::ParticipantPanelWidgetExt;
 use mofa_widgets::{StateChangeListener, TimerControl};
 use mofa_ui::{LedMeterWidgetExt, MicButtonWidgetExt, AecButtonWidgetExt};
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -92,7 +93,7 @@ pub struct MoFaFMScreen {
     #[rust]
     log_node_filter: usize,   // 0=ALL, 1=ASR, 2=TTS, 3=LLM, 4=Bridge, 5=Monitor, 6=App
     #[rust]
-    log_entries: Vec<String>,  // Raw log entries for filtering
+    log_entries: VecDeque<String>,
     #[rust]
     log_display_dirty: bool,   // Flag to track if log display needs update
     #[rust]

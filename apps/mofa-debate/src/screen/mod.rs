@@ -25,6 +25,7 @@ use mofa_ui::{
 };
 use mofa_widgets::participant_panel::ParticipantPanelWidgetExt;
 use mofa_widgets::{StateChangeListener, TimerControl};
+use std::collections::VecDeque;
 use std::path::PathBuf;
 
 /// Register live design for this module
@@ -82,7 +83,7 @@ pub struct MoFaDebateScreen {
     #[rust]
     log_node_filter: usize, // 0=ALL, 1=ASR, 2=TTS, 3=LLM, 4=Bridge, 5=Monitor, 6=App
     #[rust]
-    log_entries: Vec<String>, // Raw log entries for filtering
+    log_entries: VecDeque<String>,
 
     // Dropdown width caching for popup menu sync
     #[rust]

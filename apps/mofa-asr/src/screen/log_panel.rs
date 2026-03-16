@@ -214,11 +214,10 @@ impl MoFaASRScreen {
 
     /// Add a log entry (throttled)
     pub(super) fn add_log(&mut self, cx: &mut Cx, entry: &str) {
-        self.log_entries.push(entry.to_string());
+        self.log_entries.push_back(entry.to_string());
 
-        if self.log_entries.len() > MAX_LOG_ENTRIES {
-            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
-            self.log_entries.drain(0..excess);
+        while self.log_entries.len() > MAX_LOG_ENTRIES {
+            self.log_entries.pop_front();
         }
 
         self.mark_log_dirty(cx);
@@ -232,12 +231,11 @@ impl MoFaASRScreen {
         }
 
         for log_msg in logs {
-            self.log_entries.push(log_msg.format());
+            self.log_entries.push_back(log_msg.format());
         }
 
-        if self.log_entries.len() > MAX_LOG_ENTRIES {
-            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
-            self.log_entries.drain(0..excess);
+        while self.log_entries.len() > MAX_LOG_ENTRIES {
+            self.log_entries.pop_front();
         }
 
         self.mark_log_dirty(cx);

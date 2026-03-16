@@ -254,12 +254,10 @@ impl MoFaFMScreen {
 
     /// Add a log entry (throttled - doesn't immediately update display)
     pub(super) fn add_log(&mut self, cx: &mut Cx, entry: &str) {
-        self.log_entries.push(entry.to_string());
+        self.log_entries.push_back(entry.to_string());
 
-        // Prune oldest entries if over limit
-        if self.log_entries.len() > MAX_LOG_ENTRIES {
-            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
-            self.log_entries.drain(0..excess);
+        while self.log_entries.len() > MAX_LOG_ENTRIES {
+            self.log_entries.pop_front();
         }
 
         // Mark dirty for throttled update (don't update immediately)
@@ -274,13 +272,11 @@ impl MoFaFMScreen {
         }
 
         for log_msg in logs {
-            self.log_entries.push(log_msg.format());
+            self.log_entries.push_back(log_msg.format());
         }
 
-        // Prune oldest entries if over limit
-        if self.log_entries.len() > MAX_LOG_ENTRIES {
-            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
-            self.log_entries.drain(0..excess);
+        while self.log_entries.len() > MAX_LOG_ENTRIES {
+            self.log_entries.pop_front();
         }
 
         // Mark dirty for throttled update (don't update immediately)
@@ -293,5 +289,99 @@ impl MoFaFMScreen {
         self.log_display_dirty = false;
         // Immediate update for clear (user expects instant feedback)
         self.update_log_display_now(cx);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    const MAX_LOG_ENTRIES: usize = super::MAX_LOG_ENTRIES;
+
+    fn push_and_prune(buf: &mut VecDeque<String>, entry: String) {
+        buf.push_back(entry);
+        while buf.len() > MAX_LOG_ENTRIES {
+            buf.pop_front();
+        }
+    }
+
+    #[test]
+    fn stays_within_capacity() {
+        let mut buf = VecDeque::new();
+        for i in 0..(MAX_LOG_ENTRIES + 500) {
+            push_and_prune(&mut buf, format!("log {i}"));
+        }
+        assert_eq!(buf.len(), MAX_LOG_ENTRIES);
+    }
+
+    #[test]
+    fn oldest_entries_evicted_first() {
+        let mut buf = VecDeque::new();
+        for i in 0..(MAX_LOG_ENTRIES + 3) {
+            push_and_prune(&mut buf, format!("log {i}"));
+        }
+        // first 3 entries should be evicted
+        assert_eq!(buf.front().unwrap(), "log 3");
+        assert_eq!(buf.back().unwrap(), &format!("log {}", MAX_LOG_ENTRIES + 2));
+    }
+
+    #[test]
+    fn below_cap_no_eviction() {
+        let mut buf = VecDeque::new();
+        for i in 0..100 {
+            push_and_prune(&mut buf, format!("log {i}"));
+        }
+        assert_eq!(buf.len(), 100);
+        assert_eq!(buf.front().unwrap(), "log 0");
+        assert_eq!(buf.back().unwrap(), "log 99");
+    }
+
+    #[test]
+    fn exactly_at_cap() {
+        let mut buf = VecDeque::new();
+        for i in 0..MAX_LOG_ENTRIES {
+            push_and_prune(&mut buf, format!("log {i}"));
+        }
+        assert_eq!(buf.len(), MAX_LOG_ENTRIES);
+        assert_eq!(buf.front().unwrap(), "log 0");
+        // One more triggers first eviction
+        push_and_prune(&mut buf, "overflow".to_string());
+        assert_eq!(buf.len(), MAX_LOG_ENTRIES);
+        assert_eq!(buf.front().unwrap(), "log 1");
+        assert_eq!(buf.back().unwrap(), "overflow");
+    }
+
+    #[test]
+    fn clear_resets_buffer() {
+        let mut buf = VecDeque::new();
+        for i in 0..100 {
+            push_and_prune(&mut buf, format!("log {i}"));
+        }
+        buf.clear();
+        assert_eq!(buf.len(), 0);
+        assert!(buf.is_empty());
+        // Can continue adding after clear
+        push_and_prune(&mut buf, "after clear".to_string());
+        assert_eq!(buf.len(), 1);
+        assert_eq!(buf.front().unwrap(), "after clear");
+    }
+
+    #[test]
+    fn batch_insert_pruning() {
+        // poll_rust_logs
+        let mut buf = VecDeque::new();
+        for i in 0..MAX_LOG_ENTRIES {
+            buf.push_back(format!("log {i}"));
+        }
+        // Batch of 10
+        for i in 0..10 {
+            buf.push_back(format!("batch {i}"));
+        }
+        while buf.len() > MAX_LOG_ENTRIES {
+            buf.pop_front();
+        }
+        assert_eq!(buf.len(), MAX_LOG_ENTRIES);
+        assert_eq!(buf.front().unwrap(), "log 10");
+        assert_eq!(buf.back().unwrap(), "batch 9");
     }
 }

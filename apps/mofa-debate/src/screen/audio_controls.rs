@@ -121,10 +121,10 @@ impl MoFaDebateScreen {
     /// Initialize log entries with a startup message
     pub(super) fn init_demo_logs(&mut self, cx: &mut Cx) {
         // Start with empty logs - real logs will come from log_bridge
-        self.log_entries = vec![
+        self.log_entries = std::collections::VecDeque::from(vec![
             "[INFO] [App] MoFA FM initialized".to_string(),
             "[INFO] [App] System log ready - Rust logs will appear here".to_string(),
-        ];
+        ]);
 
         // Update the log display
         self.update_log_display(cx);

@@ -13,6 +13,7 @@ use mofa_ui::{LedMeterWidgetExt, MicButtonWidgetExt, AecButtonWidgetExt};
 use mofa_settings::data::Preferences;
 use crate::dora_integration::{AsrEngineId, DoraIntegration, DoraEvent};
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use moly_kit::prelude::*;
@@ -127,7 +128,7 @@ pub struct MoFaASRScreen {
     #[rust]
     log_node_filter: usize,
     #[rust]
-    log_entries: Vec<String>,
+    log_entries: VecDeque<String>,
     #[rust]
     log_display_dirty: bool,
     #[rust]
