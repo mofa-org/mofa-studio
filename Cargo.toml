@@ -6,6 +6,7 @@ members = [
     "mofa-dora-bridge",
     "mofa-ui",
     "apps/*",
+    "libs/mofa-metrics",
 ]
 exclude = ["apps/mofa-asr"]
 
