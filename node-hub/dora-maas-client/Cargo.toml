@@ -24,7 +24,7 @@ dora-node-api = { version = "0.4.1", features = ["tracing"] }
 eyre = "0.6.8"
 figment = { version = "0.10.0", features = ["env", "json", "toml", "yaml"] }
 futures = "0.3.31"
-outfox-openai = { version = "0.2.0", git = "https://github.com/outfox-ai/outfox.git" }
+outfox-openai = { version = "0.7.0", git = "https://github.com/outfox-ai/outfox.git", rev = "05309e0", features = ["chat-completion"] }
 reqwest = { version = "0.12.22", default-features = false, features = [
     "json",
     "stream",
