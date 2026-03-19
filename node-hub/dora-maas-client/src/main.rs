@@ -30,7 +30,8 @@ use eyre::{Context, Result};
 use outfox_openai::spec::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessage,
     ChatCompletionRequestAssistantMessageContent, ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessage, ChatCompletionRequestToolMessage,
+    ChatCompletionRequestSystemMessage, ChatCompletionRequestSystemMessageContent,
+    ChatCompletionRequestToolMessage,
     ChatCompletionRequestUserMessage, ChatCompletionRequestUserMessageContent, ChatCompletionTool,
     ChatCompletionToolType, CreateChatCompletionRequest, FunctionObject, PartibleTextContent,
 };
@@ -180,7 +181,7 @@ impl ChatSession {
 
         let system_message =
             ChatCompletionRequestMessage::System(ChatCompletionRequestSystemMessage {
-                content: PartibleTextContent::Text(combined_prompt),
+                content: ChatCompletionRequestSystemMessageContent::Text(combined_prompt),
                 name: None,
             });
 
