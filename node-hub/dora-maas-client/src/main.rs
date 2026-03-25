@@ -272,19 +272,31 @@ impl ChatSession {
     }
 
     fn manage_history(&mut self, max_exchanges: usize) {
-        // Keep system message + last N exchanges (N*2 messages)
-        let max_messages = 1 + (max_exchanges * 2);
-        if self.messages.len() > max_messages {
-            let excess = self.messages.len() - max_messages;
-            // Remove old messages but keep system prompt
-            self.messages.drain(1..=excess);
+        // Collect indices where each logical turn starts (i.e., user messages)
+        let turn_start_indices: Vec<usize> = self
+            .messages
+            .iter()
+            .enumerate()
+            .skip(1)
+            .filter_map(|(i, msg) | {
+                if matches!(msg, ChatCompletionRequestMessage::User(_)) {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        
+        // If within limit already, do nothing
+        if turn_start_indices.len() <= max_exchanges {
+            return;
         }
-    }
-
-    fn reset(&mut self) {
-        // Keep only system message
-        self.messages.truncate(1);
-        self.total_tokens = 0;
+        // Dropping (turn_start_indices.len() - max_exchanges) oldest turns
+        let turns_to_drop = turn_start_indices.len() - max_exchanges;
+        // Everything from index 1 up to (but not including) that index gets removed.
+        let first_keep_index = turn_start_indices[turns_to_drop];
+        // drain(1..first_keep_index) removes old turns while keeping system prompt.
+        self.messages.drain(1..first_keep_index);
     }
 }
 
