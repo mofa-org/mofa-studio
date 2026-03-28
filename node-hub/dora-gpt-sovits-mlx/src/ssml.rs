@@ -354,7 +354,8 @@ mod tests {
 
     #[test]
     fn test_plain_text() {
-        let result = parse_ssml("<speak>hello world</speak>").unwrap();
+        let result = parse_ssml("<speak>hello world</speak>")
+            .expect("parse_ssml should parse simple <speak> content");
         assert_eq!(result, vec![SsmlSegment::Text {
             text: "hello world".to_string(),
             speed: 1.0,
