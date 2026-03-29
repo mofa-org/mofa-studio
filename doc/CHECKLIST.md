@@ -543,7 +543,7 @@ pub enum TabId {
 - [x] Simplified code: `contains(&TabId::Profile)` instead of `iter().any(|t| t == "profile")`
 
 **Benefits**:
-- Compile-time checking prevents typos like `"profiel"` or `"setings"`
+- Compile-time checking prevents typos like `"profiel"` or `"settgs"`
 - IDE autocomplete works with enum variants
 - Exhaustive match ensures all cases handled
 - `Copy` trait allows efficient passing without `.clone()` or `.to_string()`
