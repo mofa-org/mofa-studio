@@ -219,11 +219,20 @@ def get_namedict():
 
 
 def text_normalize(text):
-    # todo: eng text normalize
     # 适配中文及 g2p_en 标点
+    if not text:
+        return ""
+
+    # ensure string
+    text = str(text)
+
+    # punctuation compatibility (smart quotes, dashes, ellipsis, CJK punctuation)
     rep_map = {
         "[;:：，；]": ",",
-        '["’]': "'",
+        "[\\u2018\\u2019`‘’]": "'",
+        "[\\u201c\\u201d\\u00ab\\u00bb\\u201e\\\"]": '"',
+        "\\u2026": "...",
+        "[\\u2013\\u2014]": "-",
         "。": ".",
         "！": "!",
         "？": "?",
@@ -233,16 +242,36 @@ def text_normalize(text):
 
     # 来自 g2p_en 文本格式化处理
     # 增加大写兼容
-    text = unicode(text)
-    text = normalize_numbers(text)
-    text = ''.join(char for char in unicodedata.normalize('NFD', text)
-                    if unicodedata.category(char) != 'Mn')  # Strip accents
-    text = re.sub("[^ A-Za-z'.,?!\-]", "", text)
-    text = re.sub(r"(?i)i\.e\.", "that is", text)
-    text = re.sub(r"(?i)e\.g\.", "for example", text)
+    try:
+        text = normalize_numbers(text)
+    except Exception:
+        pass
+
+    # strip accents
+    text = "".join(
+        ch for ch in unicodedata.normalize('NFD', text)
+        if unicodedata.category(ch) != 'Mn'
+    )
+
+    # keep letters, digits, quotes/apostrophes, basic punctuation and hyphen
+    text = re.sub(r"[^ 0-9a-z'\".,?!\-]", "", text)
+
+    # expand abbreviations (word boundaries, case-insensitive)
+    text = re.sub(r"\bi\.e\.\b", "that is", text, flags=re.IGNORECASE)
+    text = re.sub(r"\be\.g\.\b", "for example", text, flags=re.IGNORECASE)
 
     # 避免重复标点引起的参考泄露
-    text = replace_consecutive_punctuation(text)
+    try:
+        text = replace_consecutive_punctuation(text)
+    except Exception:
+        text = re.sub(r"([.,?!\-])\1+", r"\1", text)
+
+    # normalize whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # ensure terminal punctuation for TTS stability
+    if text and text[-1] not in ".?!":
+        text += "."
 
     return text
 
