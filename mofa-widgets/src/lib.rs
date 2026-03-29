@@ -28,6 +28,7 @@
 //! - [`waveform_view`] - Real-time audio waveform visualization
 //! - [`log_panel`] - Scrollable Markdown log display
 //! - [`led_gauge`] - LED-style bar gauge for levels
+//! - [`chat_bubble`] - Chat message bubble with role support
 //! - [`audio_player`] - Audio playback engine
 //!
 //! ## Theme System
@@ -76,6 +77,7 @@
 
 pub mod app_trait;
 pub mod audio_player;
+pub mod chat_bubble;
 pub mod led_gauge;
 pub mod log_panel;
 pub mod participant_panel;

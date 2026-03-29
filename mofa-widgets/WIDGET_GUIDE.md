@@ -10,6 +10,7 @@ Shared reusable UI components for MoFA Studio applications built on the Makepad 
 - [ParticipantPanel](#participantpanel)
 - [LogPanel](#logpanel)
 - [BufferGauge](#buffergauge)
+- [ChatBubble](#chatbubble)
 - [AudioPlayer](#audioplayer)
 - [App Traits](#app-traits)
 
@@ -31,7 +32,7 @@ impl LiveRegister for App {
 }
 ```
 
-### Import in live_design!
+### Import in live_design
 
 ```rust
 live_design! {
@@ -40,6 +41,7 @@ live_design! {
     use mofa_widgets::participant_panel::ParticipantPanel;
     use mofa_widgets::log_panel::LogPanel;
     use mofa_widgets::led_gauge::BufferGauge;
+    use mofa_widgets::chat_bubble::ChatBubble;
 }
 ```
 
@@ -95,6 +97,7 @@ live_design! {
 ### Color Palettes
 
 Full Tailwind-style palettes (50-900 shades):
+
 - `SLATE_*` - Cool gray for backgrounds
 - `GRAY_*` - Neutral gray for text
 - `BLUE_*`, `INDIGO_*` - Primary colors
@@ -122,6 +125,7 @@ draw_bg: {
 ```
 
 Update at runtime:
+
 ```rust
 widget.apply_over(cx, live!{ draw_bg: { dark_mode: 1.0 } });
 ```
@@ -401,6 +405,61 @@ live_design! {
 
 ---
 
+## ChatBubble
+
+Reusable chat message bubble with role-based styling for user, assistant, and system messages.
+
+### Features
+
+- Role-specific colors and text colors
+- Automatic text wrapping
+- Configurable padding and margins
+
+### Usage
+
+```rust
+live_design! {
+    use mofa_widgets::chat_bubble::ChatBubble;
+
+    ChatView = <View> {
+        user_bubble = <ChatBubble> {
+            role: 0.0,
+            text: "Hello, how can I help you?"
+        }
+        assistant_bubble = <ChatBubble> {
+            role: 1.0,
+            text: "I'm here to assist with your questions."
+        }
+        system_bubble = <ChatBubble> {
+            role: 2.0,
+            text: "System message: Connection established"
+        }
+    }
+}
+```
+
+### Updating Content
+
+Set role and text dynamically:
+
+```rust
+// Update bubble
+self.view.view(ids!(bubble)).apply_over(cx, live!{
+    role: 1.0,
+    text: "New response"
+});
+```
+
+### Roles
+
+| Role | Background | Text Color | Description |
+|------|------------|------------|-------------|
+| User | Blue | White | User messages |
+| Assistant | Gray | Dark | AI responses |
+| System | Yellow | Dark | System notifications |
+
+---
+
 ## AudioPlayer
 
 Thread-safe circular buffer audio playback using cpal.
@@ -509,6 +568,7 @@ impl TimerControl for MyWidgetRef {
 ```
 
 **Why use TimerControl?**
+
 - Prevents resource waste on hidden widgets
 - Avoids stale timer callbacks
 - Makepad doesn't auto-cleanup timers
@@ -678,6 +738,7 @@ fn pixel(self) -> vec4 {
 ### Lexer Issues
 
 Some hex values are adjusted to avoid Rust lexer conflicts:
+
 - `#1e293b` → `#1f293b` (because `1e` looks like scientific notation)
 - `#4ade80` → `#4adf80` (because `de` is a digit sequence)
 
