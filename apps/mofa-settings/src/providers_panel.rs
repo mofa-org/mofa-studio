@@ -633,7 +633,7 @@ impl ProvidersPanel {
     }
 
     fn select_provider_internal(&mut self, cx: &mut Cx, provider_id: &ProviderId) {
-        // Reset all built-in items to normal
+        // Reset all built-in items to unselected and clear hover state.
         let items = [
             ids!(scroll_view.list_container.openai_item),
             ids!(scroll_view.list_container.deepseek_item),
@@ -641,21 +641,9 @@ impl ProvidersPanel {
             ids!(scroll_view.list_container.nvidia_item),
         ];
 
-        let normal_color = if self.dark_mode {
-            vec4(0.12, 0.16, 0.23, 1.0)
-        } else {
-            vec4(1.0, 1.0, 1.0, 1.0)
-        };
-
-        let selected_color = if self.dark_mode {
-            vec4(0.12, 0.23, 0.37, 1.0)
-        } else {
-            vec4(0.86, 0.92, 1.0, 1.0)
-        };
-
         for item_id in &items {
             self.view.view(item_id.clone()).apply_over(cx, live!{
-                draw_bg: { color: (normal_color) }
+                draw_bg: { selected: 0.0, hover: 0.0 }
             });
         }
 
@@ -684,22 +672,22 @@ impl ProvidersPanel {
         match selected {
             "openai" => {
                 self.view.view(ids!(scroll_view.list_container.openai_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, hover: 0.0 }
                 });
             }
             "deepseek" => {
                 self.view.view(ids!(scroll_view.list_container.deepseek_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, hover: 0.0 }
                 });
             }
             "alibaba_cloud" => {
                 self.view.view(ids!(scroll_view.list_container.alibaba_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, hover: 0.0 }
                 });
             }
             "nvidia" => {
                 self.view.view(ids!(scroll_view.list_container.nvidia_item)).apply_over(cx, live!{
-                    draw_bg: { color: (selected_color) }
+                    draw_bg: { selected: 1.0, hover: 0.0 }
                 });
             }
             _ => {
@@ -707,7 +695,7 @@ impl ProvidersPanel {
                 for (i, provider) in self.custom_providers.iter().enumerate() {
                     if provider.id == *provider_id && i < custom_items.len() {
                         self.view.view(custom_items[i]).apply_over(cx, live!{
-                            draw_bg: { selected: 1.0 }
+                            draw_bg: { selected: 1.0, hover: 0.0 }
                         });
                         break;
                     }
@@ -766,10 +754,6 @@ impl ProvidersPanelRef {
             });
 
             // Color constants
-            let dark_normal = vec4(0.12, 0.16, 0.23, 1.0);
-            let light_normal = vec4(1.0, 1.0, 1.0, 1.0);
-            let dark_selected = vec4(0.12, 0.23, 0.37, 1.0);
-            let light_selected = vec4(0.86, 0.92, 1.0, 1.0);
             let dark_text = vec4(0.95, 0.96, 0.98, 1.0);
             let light_text = vec4(0.22, 0.25, 0.32, 1.0);
 
@@ -785,14 +769,16 @@ impl ProvidersPanelRef {
 
             for (provider_name, item_path, label_path) in items {
                 let is_selected = selected == Some(provider_name);
-                let bg_color = if is_selected {
-                    if is_dark { dark_selected } else { light_selected }
-                } else {
-                    if is_dark { dark_normal } else { light_normal }
-                };
                 let text_color = if is_dark { dark_text } else { light_text };
+                let selected_val = if is_selected { 1.0 } else { 0.0 };
 
-                inner.view.view(item_path).apply_over(cx, live!{ draw_bg: { color: (bg_color) } });
+                inner.view.view(item_path).apply_over(cx, live!{
+                    draw_bg: {
+                        dark_mode: (dark_mode),
+                        selected: (selected_val),
+                        hover: 0.0
+                    }
+                });
                 inner.view.label(label_path).apply_over(cx, live!{ draw_text: { color: (text_color) } });
             }
 
@@ -823,9 +809,20 @@ impl ProvidersPanelRef {
 
             let custom_text_color = if is_dark { dark_text } else { light_text };
 
-            for (item_path, label_path) in custom_item_paths {
+            for (i, (item_path, label_path)) in custom_item_paths.iter().enumerate() {
+                let is_selected_custom = inner
+                    .custom_providers
+                    .get(i)
+                    .map(|provider| selected == Some(provider.id.as_str()))
+                    .unwrap_or(false);
+                let selected_val = if is_selected_custom { 1.0 } else { 0.0 };
+
                 inner.view.view(item_path).apply_over(cx, live!{
-                    draw_bg: { dark_mode: (dark_mode) }
+                    draw_bg: {
+                        dark_mode: (dark_mode),
+                        selected: (selected_val),
+                        hover: 0.0
+                    }
                 });
                 inner.view.label(label_path).apply_over(cx, live!{
                     draw_text: { color: (custom_text_color) }
