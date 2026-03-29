@@ -12,7 +12,7 @@ use mofa_ui::{MofaHeroWidgetExt, MofaHeroAction, ConnectionStatus, AudioManager}
 use mofa_ui::{LedMeterWidgetExt, MicButtonWidgetExt, AecButtonWidgetExt};
 use mofa_settings::data::Preferences;
 use crate::dora_integration::{AsrEngineId, DoraIntegration, DoraEvent};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use moly_kit::prelude::*;
@@ -127,7 +127,7 @@ pub struct MoFaASRScreen {
     #[rust]
     log_node_filter: usize,
     #[rust]
-    log_entries: Vec<String>,
+    log_entries: VecDeque<String>,
     #[rust]
     log_display_dirty: bool,
     #[rust]
@@ -262,7 +262,13 @@ impl Widget for MoFaASRScreen {
         if self.paraformer_chat_controller.is_none() {
             let controller = ChatController::new_arc();
             {
-                let mut guard = controller.lock().expect("ChatController mutex poisoned");
+                let mut guard = match controller.lock() {
+                    Ok(g) => g,
+                    Err(poisoned) => {
+                        ::log::warn!("ChatController mutex poisoned; recovering inner state");
+                        poisoned.into_inner()
+                    }
+                };
                 guard.dangerous_state_mut().bots.push(Bot {
                     id: BotId::new("asr"),
                     name: "Paraformer".to_string(),
@@ -270,7 +276,13 @@ impl Widget for MoFaASRScreen {
                     capabilities: BotCapabilities::new(),
                 });
             }
-            self.paraformer_chat_controller = Some(controller.clone());
+            self.paraformer_chatmatch controller.lock() {
+                    Ok(g) => g,
+                    Err(poisoned) => {
+                        ::log::warn!("ChatController mutex poisoned; recovering inner state");
+                        poisoned.into_inner()
+                    }
+                }
             self.view.messages(ids!(paraformer_messages)).write().chat_controller = Some(controller);
         }
         if self.qwen3_chat_controller.is_none() {
@@ -423,7 +435,13 @@ impl MoFaASRScreen {
         };
 
         let count = {
-            let mut guard = controller.lock().expect("ChatController mutex poisoned");
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    ::log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
             let state = guard.dangerous_state_mut();
             state.messages.clear();
             for msg in messages {
@@ -465,7 +483,14 @@ impl MoFaASRScreen {
     fn handle_start(&mut self, cx: &mut Cx) {
         // Clear per-engine chat controllers
         if let Some(ref controller) = self.paraformer_chat_controller {
-            controller.lock().expect("ChatController mutex poisoned").dangerous_state_mut().messages.clear();
+            let mut guard = match controller.lock() {
+                Ok(g) => g,
+                Err(poisoned) => {
+                    ::log::warn!("ChatController mutex poisoned; recovering inner state");
+                    poisoned.into_inner()
+                }
+            };
+            guard.dangerous_state_mut().messages.clear();
         }
         if let Some(ref controller) = self.qwen3_chat_controller {
             controller.lock().expect("ChatController mutex poisoned").dangerous_state_mut().messages.clear();

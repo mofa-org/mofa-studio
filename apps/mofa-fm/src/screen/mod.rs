@@ -18,6 +18,7 @@ use role_config::{RoleConfig, get_role_config_path, get_yaml_path, read_yaml_voi
 
 use makepad_widgets::*;
 use mofa_ui::{MofaHeroWidgetExt, MofaHeroAction, AudioManager};
+use std::collections::VecDeque;
 use mofa_ui::log_bridge;
 use crate::dora_integration::{DoraIntegration, DoraCommand};
 use mofa_widgets::participant_panel::ParticipantPanelWidgetExt;
@@ -92,7 +93,7 @@ pub struct MoFaFMScreen {
     #[rust]
     log_node_filter: usize,   // 0=ALL, 1=ASR, 2=TTS, 3=LLM, 4=Bridge, 5=Monitor, 6=App
     #[rust]
-    log_entries: Vec<String>,  // Raw log entries for filtering
+    log_entries: VecDeque<String>,  // Raw log entries for filtering
     #[rust]
     log_display_dirty: bool,   // Flag to track if log display needs update
     #[rust]

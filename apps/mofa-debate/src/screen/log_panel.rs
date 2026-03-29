@@ -7,6 +7,9 @@ use makepad_widgets::*;
 
 use super::MoFaDebateScreen;
 
+/// Maximum number of log entries to keep in memory (oldest entries are pruned)
+const MAX_LOG_ENTRIES: usize = 5000;
+
 impl MoFaDebateScreen {
     /// Toggle log panel visibility
     pub(super) fn toggle_log_panel(&mut self, cx: &mut Cx) {
@@ -221,7 +224,16 @@ impl MoFaDebateScreen {
 
     /// Add a log entry
     pub(super) fn add_log(&mut self, cx: &mut Cx, entry: &str) {
-        self.log_entries.push(entry.to_string());
+        self.log_entries.push_back(entry.to_string());
+
+        // Prune oldest entries if over limit
+        if self.log_entries.len() > MAX_LOG_ENTRIES {
+            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
+            for _ in 0..excess {
+                self.log_entries.pop_front();
+            }
+        }
+
         self.update_log_display(cx);
     }
 
@@ -233,7 +245,15 @@ impl MoFaDebateScreen {
         }
 
         for log_msg in logs {
-            self.log_entries.push(log_msg.format());
+            self.log_entries.push_back(log_msg.format());
+        }
+
+        // Prune oldest entries if over limit
+        if self.log_entries.len() > MAX_LOG_ENTRIES {
+            let excess = self.log_entries.len() - MAX_LOG_ENTRIES;
+            for _ in 0..excess {
+                self.log_entries.pop_front();
+            }
         }
 
         // Only update display if we got new logs
