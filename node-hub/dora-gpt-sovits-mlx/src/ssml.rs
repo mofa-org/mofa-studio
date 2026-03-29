@@ -354,7 +354,8 @@ mod tests {
 
     #[test]
     fn test_plain_text() {
-        let result = parse_ssml("<speak>hello world</speak>").unwrap();
+        let result = parse_ssml("<speak>hello world</speak>")
+            .expect("parse_ssml should parse simple <speak> content");
         assert_eq!(result, vec![SsmlSegment::Text {
             text: "hello world".to_string(),
             speed: 1.0,
@@ -363,7 +364,8 @@ mod tests {
 
     #[test]
     fn test_break_time_ms() {
-        let result = parse_ssml("<speak>hello<break time=\"500ms\"/>world</speak>").unwrap();
+        let result = parse_ssml("<speak>hello<break time=\"500ms\"/>world</speak>")
+            .expect("parse_ssml should parse break with time in milliseconds");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "hello".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 500 },
@@ -373,7 +375,8 @@ mod tests {
 
     #[test]
     fn test_break_time_seconds() {
-        let result = parse_ssml("<speak>hello<break time=\"1.5s\"/>world</speak>").unwrap();
+        let result = parse_ssml("<speak>hello<break time=\"1.5s\"/>world</speak>")
+            .expect("parse_ssml should parse break with time in seconds");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "hello".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 1500 },
@@ -383,7 +386,8 @@ mod tests {
 
     #[test]
     fn test_break_strength() {
-        let result = parse_ssml("<speak>hello<break strength=\"strong\"/>world</speak>").unwrap();
+        let result = parse_ssml("<speak>hello<break strength=\"strong\"/>world</speak>")
+            .expect("parse_ssml should parse break with strength attribute");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "hello".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 750 },
@@ -393,7 +397,8 @@ mod tests {
 
     #[test]
     fn test_prosody_rate_named() {
-        let result = parse_ssml("<speak><prosody rate=\"fast\">hello</prosody></speak>").unwrap();
+        let result = parse_ssml("<speak><prosody rate=\"fast\">hello</prosody></speak>")
+            .expect("parse_ssml should parse prosody with named rate");
         assert_eq!(result, vec![SsmlSegment::Text {
             text: "hello".to_string(),
             speed: 1.25,
@@ -402,7 +407,8 @@ mod tests {
 
     #[test]
     fn test_prosody_rate_percentage() {
-        let result = parse_ssml("<speak><prosody rate=\"80%\">slow</prosody></speak>").unwrap();
+        let result = parse_ssml("<speak><prosody rate=\"80%\">slow</prosody></speak>")
+            .expect("parse_ssml should parse prosody with percentage rate");
         assert_eq!(result, vec![SsmlSegment::Text {
             text: "slow".to_string(),
             speed: 0.8,
@@ -413,7 +419,7 @@ mod tests {
     fn test_prosody_restores_speed() {
         let result = parse_ssml(
             "<speak>normal<prosody rate=\"fast\">fast</prosody>normal again</speak>"
-        ).unwrap();
+        ).expect("parse_ssml should parse nested prosody with speed restoration");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "normal".to_string(), speed: 1.0 },
             SsmlSegment::Text { text: "fast".to_string(), speed: 1.25 },
@@ -425,7 +431,7 @@ mod tests {
     fn test_paragraph_boundary() {
         let result = parse_ssml(
             "<speak><p>First paragraph.</p><p>Second paragraph.</p></speak>"
-        ).unwrap();
+        ).expect("parse_ssml should parse paragraph boundaries");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "First paragraph.".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 750 },
@@ -439,7 +445,7 @@ mod tests {
         // Adjacent <s> segments at same speed get merged (fewer synthesis calls)
         let result = parse_ssml(
             "<speak><s>First.</s><s>Second.</s></speak>"
-        ).unwrap();
+        ).expect("parse_ssml should merge adjacent sentences");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "First. Second.".to_string(), speed: 1.0 },
         ]);
@@ -450,7 +456,7 @@ mod tests {
         // <s> segments separated by <break> remain distinct
         let result = parse_ssml(
             "<speak><s>First.</s><break time=\"300ms\"/><s>Second.</s></speak>"
-        ).unwrap();
+        ).expect("parse_ssml should parse sentences separated by break");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "First.".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 300 },
@@ -468,7 +474,8 @@ mod tests {
             再见。
         </speak>"#;
 
-        let result = parse_ssml(ssml).unwrap();
+        let result = parse_ssml(ssml)
+            .expect("parse_ssml should parse complex SSML with Chinese text");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "今天天气真不错。".to_string(), speed: 1.0 },
             SsmlSegment::Silence { duration_ms: 500 },
@@ -482,7 +489,7 @@ mod tests {
     fn test_unknown_tags_preserved_text() {
         let result = parse_ssml(
             "<speak><emphasis>important</emphasis> text</speak>"
-        ).unwrap();
+        ).expect("parse_ssml should preserve text from unknown tags");
         assert_eq!(result, vec![
             SsmlSegment::Text { text: "important text".to_string(), speed: 1.0 },
         ]);
@@ -527,7 +534,8 @@ mod tests {
     #[test]
     fn test_silence_capped() {
         // Silence > 10s should be capped
-        let result = parse_ssml("<speak>a<break time=\"30000ms\"/>b</speak>").unwrap();
+        let result = parse_ssml("<speak>a<break time=\"30000ms\"/>b</speak>")
+            .expect("parse_ssml should parse and cap long silence");
         assert_eq!(result[1], SsmlSegment::Silence { duration_ms: 10000 });
     }
 

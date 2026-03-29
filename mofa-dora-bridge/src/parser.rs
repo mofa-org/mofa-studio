@@ -430,7 +430,8 @@ nodes:
       tts_log: tts/log
 "#;
 
-        let parsed = DataflowParser::parse_string(yaml, PathBuf::from("test.yml")).unwrap();
+        let parsed = DataflowParser::parse_string(yaml, PathBuf::from("test.yml"))
+            .expect("DataflowParser failed to parse a valid test YAML; check parser changes");
 
         assert_eq!(parsed.mofa_nodes.len(), 2);
         assert_eq!(parsed.mofa_nodes[0].id, "mofa-audio-player");

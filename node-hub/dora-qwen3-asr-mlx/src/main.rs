@@ -100,7 +100,14 @@ fn main() -> Result<()> {
                             }
                         }
 
-                        let engine = engine.as_mut().unwrap();
+                        let engine = match engine.as_mut() {
+                            Some(e) => e,
+                            None => {
+                                log::error!("Engine unexpectedly missing after attempted initialization");
+                                send_log(&mut node, "ERROR", "Engine not available")?;
+                                continue;
+                            }
+                        };
 
                         // Extract metadata
                         let question_id = metadata
