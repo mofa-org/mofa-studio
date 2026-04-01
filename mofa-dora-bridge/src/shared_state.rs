@@ -97,7 +97,7 @@ use crate::data::{AudioData, ChatMessage, LogEntry};
 /// assert_eq!(vec.read_all(), vec![2, 3, 4]);
 /// ```
 pub struct DirtyVec<T> {
-    data: RwLock<Vec<T>>,
+    data: RwLock<VecDeque<T>>,
     dirty: AtomicBool,
     max_size: usize,
 }
@@ -105,7 +105,7 @@ pub struct DirtyVec<T> {
 impl<T: Clone> DirtyVec<T> {
     pub fn new(max_size: usize) -> Self {
         Self {
-            data: RwLock::new(Vec::new()),
+            data: RwLock::new(VecDeque::new()),
             dirty: AtomicBool::new(false),
             max_size,
         }
@@ -114,9 +114,9 @@ impl<T: Clone> DirtyVec<T> {
     /// Push item, mark dirty, enforce max size
     pub fn push(&self, item: T) {
         let mut data = self.data.write();
-        data.push(item);
+        data.push_back(item);
         if data.len() > self.max_size {
-            data.remove(0);
+            data.pop_front();
         }
         self.dirty.store(true, Ordering::Release);
     }
@@ -124,7 +124,7 @@ impl<T: Clone> DirtyVec<T> {
     /// Read all data if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<Vec<T>> {
         if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
+            Some(self.data.read().iter().cloned().collect())
         } else {
             None
         }
@@ -132,7 +132,7 @@ impl<T: Clone> DirtyVec<T> {
 
     /// Read all data unconditionally
     pub fn read_all(&self) -> Vec<T> {
-        self.data.read().clone()
+        self.data.read().iter().cloned().collect()
     }
 
     /// Clear all data
