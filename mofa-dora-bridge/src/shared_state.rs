@@ -123,11 +123,16 @@ impl<T: Clone> DirtyVec<T> {
 
     /// Read all data if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<Vec<T>> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
-        } else {
-            None
+        let data = self.data.read();
+        if !self.dirty.load(Ordering::Acquire) {
+            return None;
         }
+
+        // Snapshot while holding the read lock, then clear dirty.
+        // This avoids clearing dirty before data is observed.
+        let snapshot = data.clone();
+        self.dirty.store(false, Ordering::Release);
+        Some(snapshot)
     }
 
     /// Read all data unconditionally
@@ -188,11 +193,16 @@ impl<T: Clone + Default> DirtyValue<T> {
 
     /// Read value if dirty, clearing dirty flag
     pub fn read_if_dirty(&self) -> Option<T> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.data.read().clone())
-        } else {
-            None
+        let data = self.data.read();
+        if !self.dirty.load(Ordering::Acquire) {
+            return None;
         }
+
+        // Snapshot while holding the read lock, then clear dirty.
+        // This avoids clearing dirty before data is observed.
+        let snapshot = data.clone();
+        self.dirty.store(false, Ordering::Release);
+        Some(snapshot)
     }
 
     /// Read value unconditionally
@@ -297,11 +307,16 @@ impl ChatState {
 
     /// Read all messages if dirty
     pub fn read_if_dirty(&self) -> Option<Vec<ChatMessage>> {
-        if self.dirty.swap(false, Ordering::AcqRel) {
-            Some(self.messages.read().clone())
-        } else {
-            None
+        let messages = self.messages.read();
+        if !self.dirty.load(Ordering::Acquire) {
+            return None;
         }
+
+        // Snapshot while holding the read lock, then clear dirty.
+        // This avoids clearing dirty before data is observed.
+        let snapshot = messages.clone();
+        self.dirty.store(false, Ordering::Release);
+        Some(snapshot)
     }
 
     /// Read all messages unconditionally
