@@ -19,7 +19,7 @@ license = "Apache-2.0"
 makepad-widgets = { git = "https://github.com/wyeworks/makepad", rev = "53b2e5c84" }
 
 # Audio
-cpal = "0.15"
+cpal = "0.17"
 
 # Async runtime
 tokio = { version = "1", features = ["full", "sync"] }
